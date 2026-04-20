@@ -169,11 +169,12 @@ export default function LogoHero() {
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
-        if (maxDist > 1.2 || anyDelayed) {
+        if (maxDist > 25 || anyDelayed) {
           rafRef.current = requestAnimationFrame(draw);
         } else {
-          // Paint clean image directly over assembled particles in the same frame —
-          // opaque logo areas cover the dots, no clearRect = no black flash
+          // Particles are visually in position — switch to clean logo.
+          // clearRect + drawImage is atomic within one RAF callback: no flash.
+          ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
           ctx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
           ctx.drawImage(textOff, 0, LOGO_H);
         }
