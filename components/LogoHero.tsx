@@ -121,9 +121,6 @@ export default function LogoHero() {
         }
       }
 
-      let finishing = false;
-      let finishAlpha = 0;
-
       const draw = () => {
         ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
@@ -170,25 +167,15 @@ export default function LogoHero() {
         }
 
         ctx.shadowBlur = 0;
-
-        // Cross-fade clean image over assembled particles — no flash
-        if (finishing) {
-          finishAlpha = Math.min(1, finishAlpha + 0.045);
-          ctx.globalAlpha = finishAlpha;
-          ctx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
-          ctx.drawImage(textOff, 0, LOGO_H);
-          ctx.globalAlpha = 1;
-          if (finishAlpha < 1) rafRef.current = requestAnimationFrame(draw);
-          return;
-        }
-
         ctx.globalAlpha = 1;
 
         if (maxDist > 1.2 || anyDelayed) {
           rafRef.current = requestAnimationFrame(draw);
         } else {
-          finishing = true;
-          rafRef.current = requestAnimationFrame(draw);
+          // Paint clean image directly over assembled particles in the same frame —
+          // opaque logo areas cover the dots, no clearRect = no black flash
+          ctx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
+          ctx.drawImage(textOff, 0, LOGO_H);
         }
       };
 
