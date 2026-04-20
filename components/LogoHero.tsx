@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface Particle {
   x: number;
@@ -15,12 +15,15 @@ interface Particle {
   delay: number;
 }
 
-const CANVAS_SIZE = 480;
+const CANVAS_W = 480;
+const LOGO_H = 480;
+const TEXT_H = 96;
+const CANVAS_H = LOGO_H + TEXT_H;
 const SAMPLE_STEP = 4;
+const TEXT_SAMPLE_STEP = 2;
 
 export default function LogoHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [textVisible, setTextVisible] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -29,52 +32,97 @@ export default function LogoHero() {
     const ctx = canvas.getContext("2d")!;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_SIZE * dpr;
-    canvas.height = CANVAS_SIZE * dpr;
-    canvas.style.width = `${CANVAS_SIZE}px`;
-    canvas.style.height = `${CANVAS_SIZE}px`;
+    canvas.width = CANVAS_W * dpr;
+    canvas.height = CANVAS_H * dpr;
+    canvas.style.width = `${CANVAS_W}px`;
+    canvas.style.height = `${CANVAS_H}px`;
     ctx.scale(dpr, dpr);
 
-    const W = CANVAS_SIZE;
-    const H = CANVAS_SIZE;
     const pad = 60;
 
     const img = new Image();
     img.src = "/assets/ea-monument.png";
-    img.onload = () => {
-      const off = document.createElement("canvas");
-      off.width = W;
-      off.height = H;
-      const offCtx = off.getContext("2d")!;
-      offCtx.drawImage(img, pad, pad, W - pad * 2, H - pad * 2);
-      const { data } = offCtx.getImageData(0, 0, W, H);
+    img.onload = async () => {
+      // Wait for web fonts so text renders correctly on canvas
+      try {
+        await Promise.all([
+          document.fonts.load("44px 'Pinyon Script'"),
+          document.fonts.load("700 9px 'JetBrains Mono'"),
+        ]);
+      } catch (_) {
+        await document.fonts.ready;
+      }
+
+      // --- Sample logo pixels ---
+      const logoOff = document.createElement("canvas");
+      logoOff.width = CANVAS_W;
+      logoOff.height = LOGO_H;
+      const logoCtx = logoOff.getContext("2d")!;
+      logoCtx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
+      const { data: logoData } = logoCtx.getImageData(0, 0, CANVAS_W, LOGO_H);
+
+      // --- Sample text pixels ---
+      const textOff = document.createElement("canvas");
+      textOff.width = CANVAS_W;
+      textOff.height = TEXT_H;
+      const tCtx = textOff.getContext("2d")!;
+      tCtx.fillStyle = "#f2eee3";
+      tCtx.textAlign = "center";
+      tCtx.textBaseline = "top";
+
+      tCtx.font = "44px 'Pinyon Script', cursive";
+      tCtx.fillText("Eastern Angelica", CANVAS_W / 2, 4);
+
+      tCtx.font = "700 9px 'JetBrains Mono', monospace";
+      try { (tCtx as any).letterSpacing = "0.32em"; } catch (_) {}
+      tCtx.fillText("RECORDINGS · EST. 2024", CANVAS_W / 2, 62);
+
+      const { data: textData } = tCtx.getImageData(0, 0, CANVAS_W, TEXT_H);
 
       const particles: Particle[] = [];
 
-      for (let y = 0; y < H; y += SAMPLE_STEP) {
-        for (let x = 0; x < W; x += SAMPLE_STEP) {
-          const i = (y * W + x) * 4;
-          if (data[i + 3] > 40) {
+      // Logo particles
+      for (let y = 0; y < LOGO_H; y += SAMPLE_STEP) {
+        for (let x = 0; x < CANVAS_W; x += SAMPLE_STEP) {
+          const i = (y * CANVAS_W + x) * 4;
+          if (logoData[i + 3] > 40) {
             particles.push({
-              tx: x,
-              ty: y,
-              // Start from random positions within the canvas — no edge clipping
-              x: Math.random() * W,
-              y: Math.random() * H,
+              tx: x, ty: y,
+              x: Math.random() * CANVAS_W,
+              y: Math.random() * CANVAS_H,
               vx: (Math.random() - 0.5) * 0.8,
               vy: (Math.random() - 0.5) * 0.8,
               alpha: 0,
-              targetAlpha: (data[i + 3] / 255) * 0.85 + 0.1,
+              targetAlpha: (logoData[i + 3] / 255) * 0.85 + 0.1,
               r: 3.5 + Math.random() * 3,
-              // Stagger: particles fade in and converge at different times
               delay: Math.floor(Math.random() * 55),
             });
           }
         }
       }
 
+      // Text particles — stagger starts at frame 80 so text assembles after logo
+      for (let y = 0; y < TEXT_H; y += TEXT_SAMPLE_STEP) {
+        for (let x = 0; x < CANVAS_W; x += TEXT_SAMPLE_STEP) {
+          const i = (y * CANVAS_W + x) * 4;
+          if (textData[i + 3] > 40) {
+            particles.push({
+              tx: x, ty: LOGO_H + y,
+              x: Math.random() * CANVAS_W,
+              y: Math.random() * CANVAS_H,
+              vx: (Math.random() - 0.5) * 0.8,
+              vy: (Math.random() - 0.5) * 0.8,
+              alpha: 0,
+              targetAlpha: (textData[i + 3] / 255) * 0.8 + 0.1,
+              r: 2 + Math.random() * 2,
+              delay: 80 + Math.floor(Math.random() * 55),
+            });
+          }
+        }
+      }
+
       const draw = () => {
-        ctx.clearRect(0, 0, W, H);
+        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
         let maxDist = 0;
         let anyDelayed = false;
@@ -86,7 +134,6 @@ export default function LogoHero() {
             continue;
           }
 
-          // Fade in gradually
           p.alpha = Math.min(p.targetAlpha, p.alpha + 0.022);
 
           const dx = p.tx - p.x;
@@ -94,7 +141,6 @@ export default function LogoHero() {
           const d = Math.sqrt(dx * dx + dy * dy);
           maxDist = Math.max(maxDist, d);
 
-          // Softer spring + more damping = slower, more graceful convergence
           p.vx += dx * 0.018;
           p.vy += dy * 0.018;
           p.vx *= 0.87;
@@ -103,7 +149,7 @@ export default function LogoHero() {
           p.y += p.vy;
 
           const progress = Math.max(0, 1 - d / 180);
-          p.r = Math.max(1, p.r - 0.03);
+          p.r = Math.max(0.8, p.r - 0.03);
           const displayR = p.r * (1 - progress * 0.6);
 
           if (displayR > 1.8) {
@@ -126,9 +172,10 @@ export default function LogoHero() {
         if (maxDist > 1.2 || anyDelayed) {
           rafRef.current = requestAnimationFrame(draw);
         } else {
-          ctx.clearRect(0, 0, W, H);
-          ctx.drawImage(img, pad, pad, W - pad * 2, H - pad * 2);
-          setTimeout(() => setTextVisible(true), 120);
+          // Final clean draw: logo + text
+          ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+          ctx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
+          ctx.drawImage(textOff, 0, LOGO_H);
         }
       };
 
@@ -145,10 +192,6 @@ export default function LogoHero() {
   return (
     <div className="logo-hero-inner">
       <canvas ref={canvasRef} className="logo-hero-canvas" />
-      <div className={`logo-hero-text${textVisible ? " on" : ""}`}>
-        <span className="logo-hero-name">Eastern Angelica</span>
-        <span className="logo-hero-sub">Recordings · Est. 2024</span>
-      </div>
     </div>
   );
 }

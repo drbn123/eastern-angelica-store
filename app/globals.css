@@ -480,7 +480,6 @@ footer.legal { padding: 20px; border-top: 1px solid var(--line); display: flex; 
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
 }
 
 .logo-hero-canvas {
