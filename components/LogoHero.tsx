@@ -10,13 +10,13 @@ interface Particle {
   vx: number;
   vy: number;
   alpha: number;
-  /** start radius (large soft dot) → shrinks to 1 as it assembles */
+  targetAlpha: number;
   r: number;
+  delay: number;
 }
 
 const CANVAS_SIZE = 480;
-const SAMPLE_STEP = 3;
-const SPREAD = 1200;
+const SAMPLE_STEP = 4;
 
 export default function LogoHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,7 +28,6 @@ export default function LogoHero() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
 
-    // Scale for retina
     const dpr = window.devicePixelRatio || 1;
     canvas.width = CANVAS_SIZE * dpr;
     canvas.height = CANVAS_SIZE * dpr;
@@ -38,17 +37,15 @@ export default function LogoHero() {
 
     const W = CANVAS_SIZE;
     const H = CANVAS_SIZE;
+    const pad = 60;
 
     const img = new Image();
     img.src = "/assets/ea-monument.png";
     img.onload = () => {
-      // Sample logo pixels via offscreen canvas
       const off = document.createElement("canvas");
       off.width = W;
       off.height = H;
       const offCtx = off.getContext("2d")!;
-      // center the logo with some padding
-      const pad = 60;
       offCtx.drawImage(img, pad, pad, W - pad * 2, H - pad * 2);
       const { data } = offCtx.getImageData(0, 0, W, H);
 
@@ -58,52 +55,60 @@ export default function LogoHero() {
         for (let x = 0; x < W; x += SAMPLE_STEP) {
           const i = (y * W + x) * 4;
           if (data[i + 3] > 40) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * SPREAD + 80;
             particles.push({
               tx: x,
               ty: y,
-              x: W / 2 + Math.cos(angle) * dist,
-              y: H / 2 + Math.sin(angle) * dist,
-              vx: (Math.random() - 0.5) * 3,
-              vy: (Math.random() - 0.5) * 3,
-              alpha: (data[i + 3] / 255) * 0.9 + 0.1,
-              r: 4 + Math.random() * 4,
+              // Start from random positions within the canvas — no edge clipping
+              x: Math.random() * W,
+              y: Math.random() * H,
+              vx: (Math.random() - 0.5) * 0.8,
+              vy: (Math.random() - 0.5) * 0.8,
+              alpha: 0,
+              targetAlpha: (data[i + 3] / 255) * 0.85 + 0.1,
+              r: 3.5 + Math.random() * 3,
+              // Stagger: particles fade in and converge at different times
+              delay: Math.floor(Math.random() * 55),
             });
           }
         }
       }
 
-      let assembled = false;
-
       const draw = () => {
         ctx.clearRect(0, 0, W, H);
 
         let maxDist = 0;
+        let anyDelayed = false;
 
         for (const p of particles) {
+          if (p.delay > 0) {
+            p.delay--;
+            anyDelayed = true;
+            continue;
+          }
+
+          // Fade in gradually
+          p.alpha = Math.min(p.targetAlpha, p.alpha + 0.022);
+
           const dx = p.tx - p.x;
           const dy = p.ty - p.y;
           const d = Math.sqrt(dx * dx + dy * dy);
           maxDist = Math.max(maxDist, d);
 
-          // Spring physics
-          p.vx += dx * 0.055;
-          p.vy += dy * 0.055;
-          p.vx *= 0.76;
-          p.vy *= 0.76;
+          // Softer spring + more damping = slower, more graceful convergence
+          p.vx += dx * 0.018;
+          p.vy += dy * 0.018;
+          p.vx *= 0.87;
+          p.vy *= 0.87;
           p.x += p.vx;
           p.y += p.vy;
 
-          // Radius shrinks as particle nears target
-          const progress = Math.max(0, 1 - d / 300);
-          p.r = Math.max(1, p.r - 0.06);
-          const displayR = p.r * (1 - progress * 0.65);
+          const progress = Math.max(0, 1 - d / 180);
+          p.r = Math.max(1, p.r - 0.03);
+          const displayR = p.r * (1 - progress * 0.6);
 
-          // Soft glow when far, sharp pixel when close
           if (displayR > 1.8) {
-            ctx.shadowColor = "rgba(242,238,227,0.35)";
-            ctx.shadowBlur = displayR * 3;
+            ctx.shadowColor = "rgba(242,238,227,0.3)";
+            ctx.shadowBlur = displayR * 2.5;
           } else {
             ctx.shadowBlur = 0;
           }
@@ -118,21 +123,18 @@ export default function LogoHero() {
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
-        if (maxDist > 1.2) {
+        if (maxDist > 1.2 || anyDelayed) {
           rafRef.current = requestAnimationFrame(draw);
         } else {
-          // Draw final clean static logo
           ctx.clearRect(0, 0, W, H);
           ctx.drawImage(img, pad, pad, W - pad * 2, H - pad * 2);
-          assembled = true;
           setTimeout(() => setTextVisible(true), 120);
         }
       };
 
-      // Small delay before starting so page paint settles
       setTimeout(() => {
         rafRef.current = requestAnimationFrame(draw);
-      }, 200);
+      }, 300);
     };
 
     return () => {
