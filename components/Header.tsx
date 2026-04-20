@@ -40,10 +40,6 @@ export default function Header() {
           />
           <span className="wordmark-kuzko">kuzko</span>
         </div>
-        <div className="wordmark-text">
-          <span className="wordmark-italic">Eastern</span>
-          <span className="wordmark-italic">Angelica</span>
-        </div>
       </Link>
 
       <div className="right">
