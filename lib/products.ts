@@ -30,8 +30,10 @@ function fsWriteProducts(products: Release[]): void {
 export async function readProducts(): Promise<Release[]> {
   if (useKV()) {
     const redis = await getRedis();
-    const cached = await redis.get<Release[]>("products");
-    if (cached && cached.length > 0) return cached;
+    let cached = await redis.get<Release[] | string>("products");
+    // Handle old double-encoded data
+    if (typeof cached === "string") { try { cached = JSON.parse(cached); } catch { cached = null; } }
+    if (Array.isArray(cached) && cached.length > 0) return cached as Release[];
     // First deploy — seed from committed products.json
     const initial = fsReadProducts();
     if (initial.length > 0) {
@@ -45,7 +47,7 @@ export async function readProducts(): Promise<Release[]> {
 async function writeProducts(products: Release[]): Promise<void> {
   if (useKV()) {
     const redis = await getRedis();
-    await redis.set("products", JSON.stringify(products));
+    await redis.set("products", products);
     return;
   }
   fsWriteProducts(products);

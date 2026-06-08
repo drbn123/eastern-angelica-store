@@ -36,7 +36,9 @@ function fsWritePosts(posts: Post[]): void {
 export async function readPosts(): Promise<Post[]> {
   if (useKV()) {
     const redis = await getRedis();
-    return (await redis.get<Post[]>("posts")) ?? [];
+    let val = await redis.get<Post[] | string>("posts");
+    if (typeof val === "string") { try { val = JSON.parse(val); } catch { val = null; } }
+    return (Array.isArray(val) ? val : []) as Post[];
   }
   return fsReadPosts();
 }
@@ -44,7 +46,7 @@ export async function readPosts(): Promise<Post[]> {
 async function writePosts(posts: Post[]): Promise<void> {
   if (useKV()) {
     const redis = await getRedis();
-    await redis.set("posts", JSON.stringify(posts));
+    await redis.set("posts", posts);
     return;
   }
   fsWritePosts(posts);
