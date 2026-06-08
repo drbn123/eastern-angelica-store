@@ -19,17 +19,24 @@ function JournalTab({ posts, setPosts }: { posts: Post[]; setPosts: React.Dispat
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
     setUploading(true);
+    setError("");
     const urls: string[] = [];
     for (const file of Array.from(files)) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (res.ok) urls.push((await res.json()).url);
+      if (res.ok) {
+        urls.push((await res.json()).url);
+      } else {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? `Image upload failed (${res.status}).`);
+      }
     }
     setImages((prev) => [...prev, ...urls]);
     setUploading(false);
@@ -38,6 +45,7 @@ function JournalTab({ posts, setPosts }: { posts: Post[]; setPosts: React.Dispat
   async function handlePost() {
     if (!text.trim() && !images.length) return;
     setPosting(true);
+    setError("");
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,6 +56,9 @@ function JournalTab({ posts, setPosts }: { posts: Post[]; setPosts: React.Dispat
       setPosts((prev) => [post, ...prev]);
       setText("");
       setImages([]);
+    } else {
+      const body = await res.json().catch(() => null);
+      setError(body?.error ?? `Post failed (${res.status}).`);
     }
     setPosting(false);
   }
@@ -84,6 +95,7 @@ function JournalTab({ posts, setPosts }: { posts: Post[]; setPosts: React.Dispat
               ))}
             </div>
           )}
+          {error && <span className="admin-error">{error}</span>}
           <div className="admin-composer-foot">
             <button className="admin-btn-icon" onClick={() => fileRef.current?.click()} disabled={uploading} title="Attach image">
               {uploading ? "↑" : (

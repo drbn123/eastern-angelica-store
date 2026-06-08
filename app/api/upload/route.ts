@@ -26,6 +26,15 @@ export async function POST(request: Request) {
     return Response.json({ url: blob.url });
   }
 
+  // On Vercel the filesystem is read-only — never silently fall through to a
+  // doomed fs write. Surface a clear error so the cause is obvious.
+  if (process.env.VERCEL) {
+    return Response.json(
+      { error: "Blob storage not configured (missing BLOB_READ_WRITE_TOKEN)." },
+      { status: 500 }
+    );
+  }
+
   // Local dev fallback
   const { writeFile, mkdir } = await import("fs/promises");
   const path = await import("path");
