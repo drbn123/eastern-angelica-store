@@ -2,36 +2,34 @@
 
 import { useState } from "react";
 import Cover from "@/components/Cover";
-import { RELEASES } from "@/lib/catalog";
 import { useCart } from "@/context/CartContext";
+import type { Release } from "@/lib/types";
 
 const FILTERS: [string, string][] = [
   ["all", "All"],
-  ["vinyl", "Vinyl"],
   ["cd", "CD"],
-  ["tape", "Tape"],
-  ["merch", "Merch"],
   ["book", "Books"],
+  ["bundle", "Bundle"],
+  ["merch", "Merch"],
 ];
 
 function matchFilter(format: string, filter: string): boolean {
   if (filter === "all") return true;
-  if (filter === "vinyl") return ["LP", '12"', '7"'].includes(format);
   if (filter === "cd") return format === "CD";
-  if (filter === "tape") return format === "CS";
-  if (filter === "merch") return ["TEE", "LS"].includes(format);
   if (filter === "book") return format === "BOOK";
+  if (filter === "bundle") return format === "BUNDLE";
+  if (filter === "merch") return ["TEE", "LS", "VEST"].includes(format);
   return true;
 }
 
-export default function GridView() {
+export default function GridView({ releases, onProductClick }: { releases: Release[]; onProductClick?: (idx: number) => void }) {
   const { cart, addToCart } = useCart();
   const [filter, setFilter] = useState("all");
   const [picks, setPicks] = useState<Record<string, number>>(
-    () => Object.fromEntries(RELEASES.map((r) => [r.id, 0]))
+    () => Object.fromEntries(releases.map((r) => [r.id, 0]))
   );
 
-  const shown = RELEASES.filter((r) => matchFilter(r.format, filter));
+  const shown = releases.filter((r) => matchFilter(r.format, filter));
 
   return (
     <section className="v1">
@@ -45,7 +43,7 @@ export default function GridView() {
         </p>
         <div className="meta">
           <span>04 / 2026</span>
-          <span>08 titles</span>
+          <span>{String(releases.length).padStart(2, "0")} titles</span>
           <span>·</span>
         </div>
       </div>
@@ -71,11 +69,14 @@ export default function GridView() {
           const variant = r.variants[vIdx];
           const inCartItem = cart.find((c) => c.id === r.id && c.vIdx === vIdx);
           const added = !!inCartItem;
-          const globalIdx = RELEASES.indexOf(r);
+          const globalIdx = releases.indexOf(r);
           return (
             <article key={r.id} className="card">
               <span className="idx">№ {String(i + 1).padStart(2, "0")}</span>
-              <Cover idx={globalIdx} release={r} />
+              {r.placeholder && <span className="placeholder-tag">placeholder</span>}
+              <div style={{ cursor: onProductClick ? "pointer" : "default" }} onClick={() => onProductClick?.(globalIdx)}>
+                <Cover idx={globalIdx} release={r} />
+              </div>
               <div className="title-row">
                 <div>
                   <div className="artist">{r.artist}</div>

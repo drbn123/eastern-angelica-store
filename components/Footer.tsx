@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Route } from "next";
 
 export default function Footer() {
   return (
@@ -43,7 +44,7 @@ export default function Footer() {
         </div>
       </footer>
       <footer className="legal">
-        <span>© 2026 EA Recordings · All rights reserved</span>
+        <Link href={"/admin" as Route} style={{ color: "inherit", textDecoration: "none" }}>© 2026 EA Recordings · All rights reserved</Link>
         <span>Made in PL / Pressed in CZ</span>
         <span>IG · BC · Discogs</span>
       </footer>

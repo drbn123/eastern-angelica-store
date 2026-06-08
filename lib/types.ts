@@ -16,6 +16,7 @@ export interface Release {
   tag: string;
   cover?: string;
   back?: string;
+  placeholder?: boolean;
   desc: string;
 }
 

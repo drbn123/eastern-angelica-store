@@ -1,0 +1,93 @@
+[
+  {
+    "id": "EA-001CD",
+    "title": "Eastern Angelica",
+    "artist": "Kuzko",
+    "format": "CD",
+    "edition": "Digipak / 500",
+    "year": "2026",
+    "cat": "EA-001CD",
+    "price": 16,
+    "variants": [
+      { "k": "Digipak CD", "p": 16 },
+      { "k": "Digipak + Zine", "p": 22 }
+    ],
+    "tag": "cd",
+    "cover": "/assets/ea-cd.gif",
+    "back": "/assets/ea-jcard-outside.png",
+    "placeholder": false,
+    "desc": "Debut album on CD — 11 tracks in a 4-panel digipak with the full Eastern Angelica artwork. Snowfall · 9 Gram · Praise The Flag (ft. Luca Dixon) · 747 · Baptist · Billie Jean (ft. Luca Dixon) · Art B (ft. Jeffrey) · Indulgence · Nevermind · Green Crystal Freestyle · Nail."
+  },
+  {
+    "id": "EA-BOOK",
+    "title": "POE-MAT",
+    "artist": "Kuzko",
+    "format": "BOOK",
+    "edition": "First edition",
+    "year": "2026",
+    "cat": "EA-B01",
+    "price": 25,
+    "variants": [{ "k": "Paperback", "p": 25 }],
+    "tag": "book",
+    "cover": "",
+    "back": "",
+    "placeholder": true,
+    "desc": "POE-MAT — book of poems by Kuzko. [Placeholder — final cover and details TBC.]"
+  },
+  {
+    "id": "EA-BUNDLE",
+    "title": "Eastern Angelica CD + POE-MAT",
+    "artist": "Kuzko",
+    "format": "BUNDLE",
+    "edition": "Bundle",
+    "year": "2026",
+    "cat": "EA-BND01",
+    "price": 35,
+    "variants": [{ "k": "CD + Book", "p": 35 }],
+    "tag": "bundle",
+    "cover": "",
+    "back": "",
+    "placeholder": true,
+    "desc": "Bundle — Eastern Angelica CD together with the POE-MAT book. [Placeholder — final artwork and pricing TBC.]"
+  },
+  {
+    "id": "EA-005",
+    "title": "EA Random Tee",
+    "artist": "Merch",
+    "format": "TEE",
+    "edition": "Pre-order",
+    "year": "2026",
+    "cat": "EA-M01",
+    "price": 35,
+    "variants": [
+      { "k": "White / Black print", "p": 35 },
+      { "k": "Camo / Pink print", "p": 35 }
+    ],
+    "tag": "merch",
+    "cover": "/assets/ea-tee-white.png",
+    "back": "/assets/ea-tee-camo.png",
+    "placeholder": false,
+    "desc": "Heavyweight cotton tee, 220 g/m². Full Eastern Angelica coordinates back-print with the monument mark. Two variants — white with black print, or camo with pink print."
+  },
+  {
+    "id": "EA-VEST",
+    "title": "EA Vest",
+    "artist": "Merch",
+    "format": "VEST",
+    "edition": "Pre-order",
+    "year": "2026",
+    "cat": "EA-M03",
+    "price": 45,
+    "variants": [
+      { "k": "S", "p": 45 },
+      { "k": "M", "p": 45 },
+      { "k": "L", "p": 45 },
+      { "k": "XL", "p": 45 }
+    ],
+    "tag": "merch",
+    "cover": "",
+    "back": "",
+    "placeholder": true,
+    "desc": "EA Vest — Eastern Angelica branded vest. [Placeholder — final photo and details TBC.]"
+  }
+]

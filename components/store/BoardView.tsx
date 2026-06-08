@@ -1,8 +1,8 @@
 "use client";
 
 import Cover from "@/components/Cover";
-import { RELEASES } from "@/lib/catalog";
 import { useCart } from "@/context/CartContext";
+import type { Release } from "@/lib/types";
 
 const PINS = [
   { size: "lg", top: 60, left: 40, rot: -4 },
@@ -15,7 +15,7 @@ const PINS = [
   { size: "lg", top: 980, left: 420, rot: -2 },
 ];
 
-export default function BoardView() {
+export default function BoardView({ releases }: { releases: Release[] }) {
   const { cart, addToCart } = useCart();
 
   return (
@@ -49,7 +49,7 @@ export default function BoardView() {
           pre-order
         </div>
 
-        {RELEASES.map((r, i) => {
+        {releases.map((r, i) => {
           const pin = PINS[i % PINS.length];
           const vIdx = 0;
           const inCart = cart.some((c) => c.id === r.id && c.vIdx === vIdx);

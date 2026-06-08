@@ -7,7 +7,6 @@ import TopStrip from "@/components/TopStrip";
 import Header from "@/components/Header";
 import CartSidebar from "@/components/CartSidebar";
 import Toast from "@/components/Toast";
-import Tweaks from "@/components/Tweaks";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -59,7 +58,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <CartSidebar />
             <Toast />
-            <Tweaks />
           </CartProvider>
         </ThemeProvider>
       </body>

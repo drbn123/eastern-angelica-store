@@ -3,24 +3,16 @@
 import { useEffect, useRef } from "react";
 
 interface Particle {
-  x: number;
-  y: number;
-  tx: number;
-  ty: number;
-  vx: number;
-  vy: number;
-  alpha: number;
-  targetAlpha: number;
-  r: number;
-  delay: number;
+  x: number; y: number;
+  tx: number; ty: number;
+  vx: number; vy: number;
+  alpha: number; targetAlpha: number;
+  r: number; delay: number;
+  done: boolean;
 }
 
-const CANVAS_W = 480;
-const LOGO_H = 480;
-const TEXT_H = 96;
-const CANVAS_H = LOGO_H + TEXT_H;
-const SAMPLE_STEP = 4;
-const TEXT_SAMPLE_STEP = 2;
+const SIZE = 340;
+const STEP = 2;
 
 export default function LogoHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,169 +22,127 @@ export default function LogoHero() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_W * dpr;
-    canvas.height = CANVAS_H * dpr;
-    canvas.style.width = `${CANVAS_W}px`;
-    canvas.style.height = `${CANVAS_H}px`;
+    canvas.width = SIZE * dpr;
+    canvas.height = SIZE * dpr;
+    canvas.style.width = `${SIZE}px`;
+    canvas.style.height = `${SIZE}px`;
     ctx.scale(dpr, dpr);
 
-    const pad = 60;
-
-    const img = new Image();
+    const img = new window.Image();
     img.src = "/assets/ea-monument.png";
-    img.onload = async () => {
-      // Wait for web fonts so text renders correctly on canvas
-      try {
-        await Promise.all([
-          document.fonts.load("44px 'Pinyon Script'"),
-          document.fonts.load("700 9px 'JetBrains Mono'"),
-        ]);
-      } catch (_) {
-        await document.fonts.ready;
-      }
+    img.onload = () => {
+      const off = document.createElement("canvas");
+      off.width = SIZE; off.height = SIZE;
+      const tCtx = off.getContext("2d")!;
+      tCtx.drawImage(img, 0, 0, SIZE, SIZE);
 
-      // --- Sample logo pixels ---
-      const logoOff = document.createElement("canvas");
-      logoOff.width = CANVAS_W;
-      logoOff.height = LOGO_H;
-      const logoCtx = logoOff.getContext("2d")!;
-      logoCtx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
-      const { data: logoData } = logoCtx.getImageData(0, 0, CANVAS_W, LOGO_H);
-
-      // --- Sample text pixels ---
-      const textOff = document.createElement("canvas");
-      textOff.width = CANVAS_W;
-      textOff.height = TEXT_H;
-      const tCtx = textOff.getContext("2d")!;
-      tCtx.fillStyle = "#f2eee3";
-      tCtx.textAlign = "center";
-      tCtx.textBaseline = "top";
-
-      tCtx.font = "44px 'Pinyon Script', cursive";
-      tCtx.fillText("Eastern Angelica", CANVAS_W / 2, 4);
-
-      tCtx.font = "700 9px 'JetBrains Mono', monospace";
-      try { (tCtx as any).letterSpacing = "0.32em"; } catch (_) {}
-      tCtx.fillText("RECORDINGS · EST. 2024", CANVAS_W / 2, 62);
-
-      const { data: textData } = tCtx.getImageData(0, 0, CANVAS_W, TEXT_H);
-
+      const { data } = tCtx.getImageData(0, 0, SIZE, SIZE);
       const particles: Particle[] = [];
 
-      // Logo particles
-      for (let y = 0; y < LOGO_H; y += SAMPLE_STEP) {
-        for (let x = 0; x < CANVAS_W; x += SAMPLE_STEP) {
-          const i = (y * CANVAS_W + x) * 4;
-          if (logoData[i + 3] > 40) {
+      for (let y = 0; y < SIZE; y += STEP) {
+        for (let x = 0; x < SIZE; x += STEP) {
+          const i = (y * SIZE + x) * 4;
+          if (data[i + 3] > 40) {
             particles.push({
               tx: x, ty: y,
-              x: Math.random() * CANVAS_W,
-              y: Math.random() * CANVAS_H,
-              vx: (Math.random() - 0.5) * 0.8,
-              vy: (Math.random() - 0.5) * 0.8,
+              x: Math.random() * SIZE,
+              y: Math.random() * SIZE,
+              vx: 0, vy: 0,
               alpha: 0,
-              targetAlpha: (logoData[i + 3] / 255) * 0.85 + 0.1,
-              r: 3.5 + Math.random() * 3,
-              delay: Math.floor(Math.random() * 55),
+              targetAlpha: (data[i + 3] / 255) * 0.95,
+              r: 1.8 + Math.random() * 2,
+              delay: Math.floor(Math.random() * 18),
+              done: false,
             });
           }
         }
       }
 
-      // Text particles — stagger starts at frame 80 so text assembles after logo
-      for (let y = 0; y < TEXT_H; y += TEXT_SAMPLE_STEP) {
-        for (let x = 0; x < CANVAS_W; x += TEXT_SAMPLE_STEP) {
-          const i = (y * CANVAS_W + x) * 4;
-          if (textData[i + 3] > 40) {
-            particles.push({
-              tx: x, ty: LOGO_H + y,
-              x: Math.random() * CANVAS_W,
-              y: Math.random() * CANVAS_H,
-              vx: (Math.random() - 0.5) * 0.8,
-              vy: (Math.random() - 0.5) * 0.8,
-              alpha: 0,
-              targetAlpha: (textData[i + 3] / 255) * 0.8 + 0.1,
-              r: 2 + Math.random() * 2,
-              delay: 80 + Math.floor(Math.random() * 55),
-            });
-          }
-        }
-      }
+      let prevTime = performance.now();
 
-      const draw = () => {
-        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      const draw = (now: number) => {
+        const dt = Math.min((now - prevTime) / 16.67, 2.5);
+        prevTime = now;
 
-        let maxDist = 0;
-        let anyDelayed = false;
+        ctx.clearRect(0, 0, SIZE, SIZE);
+        let live = 0;
 
         for (const p of particles) {
-          if (p.delay > 0) {
-            p.delay--;
-            anyDelayed = true;
+          if (p.done) {
+            ctx.globalAlpha = p.targetAlpha;
+            ctx.fillStyle = "#f2eee3";
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(p.tx, p.ty, Math.max(0.4, p.r * 0.45), 0, Math.PI * 2);
+            ctx.fill();
             continue;
           }
 
-          p.alpha = Math.min(p.targetAlpha, p.alpha + 0.022);
+          if (p.delay > 0) { p.delay -= dt; live++; continue; }
+
+          p.alpha = Math.min(p.targetAlpha, p.alpha + 0.04 * dt);
 
           const dx = p.tx - p.x;
           const dy = p.ty - p.y;
           const d = Math.sqrt(dx * dx + dy * dy);
-          maxDist = Math.max(maxDist, d);
 
-          p.vx += dx * 0.018;
-          p.vy += dy * 0.018;
-          p.vx *= 0.87;
-          p.vy *= 0.87;
-          p.x += p.vx;
-          p.y += p.vy;
+          if (d < 1.2 && Math.abs(p.vx) < 0.5 && Math.abs(p.vy) < 0.5) {
+            p.x = p.tx; p.y = p.ty; p.done = true;
+          } else {
+            p.vx = (p.vx + dx * 0.1 * dt) * Math.pow(0.74, dt);
+            p.vy = (p.vy + dy * 0.1 * dt) * Math.pow(0.74, dt);
+            const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+            if (speed > 14) { p.vx = p.vx / speed * 14; p.vy = p.vy / speed * 14; }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            live++;
+          }
 
-          const progress = Math.max(0, 1 - d / 180);
-          p.r = Math.max(0.8, p.r - 0.03);
-          const displayR = p.r * (1 - progress * 0.6);
+          p.r = Math.max(0.6, p.r - 0.02 * dt);
+          const progress = Math.max(0, 1 - d / 120);
+          const displayR = p.r * (1 - progress * 0.5);
 
-          if (displayR > 1.8) {
+          if (displayR > 1.4) {
             ctx.shadowColor = "rgba(242,238,227,0.3)";
-            ctx.shadowBlur = displayR * 2.5;
+            ctx.shadowBlur = displayR * 1.8;
           } else {
             ctx.shadowBlur = 0;
           }
-
           ctx.globalAlpha = p.alpha;
           ctx.fillStyle = "#f2eee3";
           ctx.beginPath();
-          ctx.arc(p.x, p.y, Math.max(0.5, displayR), 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, Math.max(0.4, displayR), 0, Math.PI * 2);
           ctx.fill();
         }
 
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
-        if (maxDist > 25 || anyDelayed) {
+        if (live > 0) {
           rafRef.current = requestAnimationFrame(draw);
         } else {
-          // Particles are visually in position — switch to clean logo.
-          // clearRect + drawImage is atomic within one RAF callback: no flash.
-          ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-          ctx.drawImage(img, pad, pad, CANVAS_W - pad * 2, LOGO_H - pad * 2);
-          ctx.drawImage(textOff, 0, LOGO_H);
+          ctx.clearRect(0, 0, SIZE, SIZE);
+          ctx.drawImage(off, 0, 0);
         }
       };
 
       setTimeout(() => {
+        prevTime = performance.now();
         rafRef.current = requestAnimationFrame(draw);
-      }, 300);
+      }, 150);
     };
 
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
 
   return (
     <div className="logo-hero-inner">
       <canvas ref={canvasRef} className="logo-hero-canvas" />
+      <div className="logo-hero-text-anim">
+        <span className="lh-script">Eastern Angelica</span>
+        <span className="lh-label">Recordings · Est. 2024</span>
+      </div>
     </div>
   );
 }

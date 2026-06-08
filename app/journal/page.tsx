@@ -1,43 +1,55 @@
+import { readPosts } from "@/lib/posts";
 import Footer from "@/components/Footer";
+import Image from "next/image";
+
+export const dynamic = "force-dynamic";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+}
 
 export default function JournalPage() {
+  const posts = readPosts();
+
   return (
     <>
-      <section
-        style={{
-          padding: "80px 40px",
-          minHeight: "50vh",
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
-          alignItems: "center",
-          textAlign: "center",
-          justifyContent: "center",
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: "var(--display)",
-            fontStyle: "italic",
-            fontSize: "clamp(48px, 8vw, 120px)",
-            lineHeight: 1,
-          }}
-        >
-          Journal
-        </h1>
-        <p
-          style={{
-            maxWidth: "52ch",
-            color: "var(--fg-dim)",
-            fontFamily: "var(--mono)",
-            fontSize: 12,
-            textTransform: "uppercase",
-            letterSpacing: "0.14em",
-          }}
-        >
-          Interviews, studio photos, release notes. Coming soon.
-        </p>
-      </section>
+      <main className="journal-page">
+        <div className="journal-hd">
+          <h1>
+            <i>Journal —</i> <b>notes & studio.</b>
+          </h1>
+        </div>
+
+        {posts.length === 0 ? (
+          <p className="journal-empty">Nothing posted yet.</p>
+        ) : (
+          <div className="journal-feed">
+            {posts.map((p) => (
+              <article key={p.id} className="journal-post">
+                <div className="journal-post-meta">
+                  <Image src="/assets/ea-monument.png" alt="EA" width={28} height={28} className="journal-avatar" />
+                  <div>
+                    <span className="journal-author">Kuzko</span>
+                    <span className="journal-date">{formatDate(p.createdAt)}</span>
+                  </div>
+                </div>
+                {p.text && <p className="journal-post-text">{p.text}</p>}
+                {p.images.length > 0 && (
+                  <div className={`journal-post-images count-${Math.min(p.images.length, 4)}`}>
+                    {p.images.map((url, i) => (
+                      <div key={i} className="journal-post-img">
+                        <Image src={url} alt="" fill style={{ objectFit: "cover" }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
       <Footer />
     </>
   );

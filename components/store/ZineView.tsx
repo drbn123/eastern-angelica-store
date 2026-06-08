@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Cover from "@/components/Cover";
-import { RELEASES } from "@/lib/catalog";
 import { useCart } from "@/context/CartContext";
+import type { Release } from "@/lib/types";
 
 const CAT_NAMES: Record<string, string> = {
   LP: "long-play vinyl",
@@ -16,19 +16,19 @@ const CAT_NAMES: Record<string, string> = {
   BOOK: "hardcover book",
 };
 
-export default function ZineView() {
+export default function ZineView({ releases, initialIdx = 0 }: { releases: Release[]; initialIdx?: number }) {
   const { cart, addToCart } = useCart();
-  const [idx, setIdx] = useState(0);
+  const [idx, setIdx] = useState(initialIdx);
   const [vIdx, setVIdx] = useState(0);
 
-  const r = RELEASES[idx];
+  const r = releases[idx] ?? releases[0];
   const safeVIdx = Math.min(vIdx, r.variants.length - 1);
   const variant = r.variants[safeVIdx];
   const inCartItem = cart.find((c) => c.id === r.id && c.vIdx === safeVIdx);
   const catName = CAT_NAMES[r.format] ?? r.format.toLowerCase();
 
   const go = (d: number) => {
-    setIdx((i) => (i + d + RELEASES.length) % RELEASES.length);
+    setIdx((i) => (i + d + releases.length) % releases.length);
     setVIdx(0);
   };
 
@@ -47,7 +47,7 @@ export default function ZineView() {
         <h1>↓ EA / Catalogue</h1>
         <span className="date">
           press → spring 2026 · no.{" "}
-          {String(idx + 1).padStart(2, "0")}/{String(RELEASES.length).padStart(2, "0")}
+          {String(idx + 1).padStart(2, "0")}/{String(releases.length).padStart(2, "0")}
         </span>
         <div className="xl">
           <i>browse</i> <b>one</b> <i>by one</i>
@@ -57,10 +57,10 @@ export default function ZineView() {
       <div className="stack-nav">
         <span>{r.cat}</span>
         <div className="progress">
-          <i style={{ width: `${((idx + 1) / RELEASES.length) * 100}%` }} />
+          <i style={{ width: `${((idx + 1) / releases.length) * 100}%` }} />
         </div>
         <span>
-          {String(idx + 1).padStart(2, "0")} / {String(RELEASES.length).padStart(2, "0")}
+          {String(idx + 1).padStart(2, "0")} / {String(releases.length).padStart(2, "0")}
         </span>
         <div className="ctrls">
           <button onClick={() => go(-1)}>←</button>
