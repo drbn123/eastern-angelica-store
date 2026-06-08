@@ -1,14 +1,16 @@
 import { randomUUID } from "crypto";
 import type { Release } from "./types";
 
-const useKV = () => !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+const useKV = () => !!process.env.KV_REST_API_URL;
 
-async function getRedis() {
-  const { Redis } = await import("@upstash/redis");
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
+async function kvGet<T>(key: string): Promise<T | null> {
+  const { kv } = await import("@vercel/kv");
+  return kv.get<T>(key);
+}
+
+async function kvSet(key: string, value: unknown): Promise<void> {
+  const { kv } = await import("@vercel/kv");
+  await kv.set(key, value);
 }
 
 function fsReadProducts(): Release[] {
@@ -29,27 +31,18 @@ function fsWriteProducts(products: Release[]): void {
 
 export async function readProducts(): Promise<Release[]> {
   if (useKV()) {
-    const redis = await getRedis();
-    let cached = await redis.get<Release[] | string>("products");
-    // Handle old double-encoded data
-    if (typeof cached === "string") { try { cached = JSON.parse(cached); } catch { cached = null; } }
-    if (Array.isArray(cached) && cached.length > 0) return cached as Release[];
+    const cached = await kvGet<Release[]>("products");
+    if (cached && Array.isArray(cached) && cached.length > 0) return cached;
     // First deploy — seed from committed products.json
     const initial = fsReadProducts();
-    if (initial.length > 0) {
-      await redis.set("products", JSON.stringify(initial));
-    }
+    if (initial.length > 0) await kvSet("products", initial);
     return initial;
   }
   return fsReadProducts();
 }
 
 async function writeProducts(products: Release[]): Promise<void> {
-  if (useKV()) {
-    const redis = await getRedis();
-    await redis.set("products", products);
-    return;
-  }
+  if (useKV()) { await kvSet("products", products); return; }
   fsWriteProducts(products);
 }
 

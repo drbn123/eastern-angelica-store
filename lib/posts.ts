@@ -7,14 +7,16 @@ export interface Post {
   createdAt: string;
 }
 
-const useKV = () => !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+const useKV = () => !!process.env.KV_REST_API_URL;
 
-async function getRedis() {
-  const { Redis } = await import("@upstash/redis");
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
+async function kvGet<T>(key: string): Promise<T | null> {
+  const { kv } = await import("@vercel/kv");
+  return kv.get<T>(key);
+}
+
+async function kvSet(key: string, value: unknown): Promise<void> {
+  const { kv } = await import("@vercel/kv");
+  await kv.set(key, value);
 }
 
 function fsReadPosts(): Post[] {
@@ -34,21 +36,12 @@ function fsWritePosts(posts: Post[]): void {
 }
 
 export async function readPosts(): Promise<Post[]> {
-  if (useKV()) {
-    const redis = await getRedis();
-    let val = await redis.get<Post[] | string>("posts");
-    if (typeof val === "string") { try { val = JSON.parse(val); } catch { val = null; } }
-    return (Array.isArray(val) ? val : []) as Post[];
-  }
+  if (useKV()) return (await kvGet<Post[]>("posts")) ?? [];
   return fsReadPosts();
 }
 
 async function writePosts(posts: Post[]): Promise<void> {
-  if (useKV()) {
-    const redis = await getRedis();
-    await redis.set("posts", posts);
-    return;
-  }
+  if (useKV()) { await kvSet("posts", posts); return; }
   fsWritePosts(posts);
 }
 
