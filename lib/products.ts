@@ -1,16 +1,14 @@
 import { randomUUID } from "crypto";
 import type { Release } from "./types";
 
-const useKV = () => !!process.env.KV_REST_API_URL;
+const useKV = () => !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
-async function kvGet<T>(key: string): Promise<T | null> {
-  const { kv } = await import("@vercel/kv");
-  return kv.get<T>(key);
-}
-
-async function kvSet(key: string, value: unknown): Promise<void> {
-  const { kv } = await import("@vercel/kv");
-  await kv.set(key, value);
+async function getRedis() {
+  const { Redis } = await import("@upstash/redis");
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
 }
 
 function fsReadProducts(): Release[] {
@@ -26,17 +24,19 @@ function fsReadProducts(): Release[] {
 function fsWriteProducts(products: Release[]): void {
   const fs = require("fs") as typeof import("fs");
   const path = require("path") as typeof import("path");
-  const file = path.join(process.cwd(), "data", "products.json");
-  fs.writeFileSync(file, JSON.stringify(products, null, 2));
+  fs.writeFileSync(path.join(process.cwd(), "data", "products.json"), JSON.stringify(products, null, 2));
 }
 
 export async function readProducts(): Promise<Release[]> {
   if (useKV()) {
-    const cached = await kvGet<Release[]>("products");
+    const redis = await getRedis();
+    const cached = await redis.get<Release[]>("products");
     if (cached && cached.length > 0) return cached;
-    // First deploy — seed KV from committed products.json
+    // First deploy — seed from committed products.json
     const initial = fsReadProducts();
-    if (initial.length > 0) await kvSet("products", initial);
+    if (initial.length > 0) {
+      await redis.set("products", JSON.stringify(initial));
+    }
     return initial;
   }
   return fsReadProducts();
@@ -44,7 +44,8 @@ export async function readProducts(): Promise<Release[]> {
 
 async function writeProducts(products: Release[]): Promise<void> {
   if (useKV()) {
-    await kvSet("products", products);
+    const redis = await getRedis();
+    await redis.set("products", JSON.stringify(products));
     return;
   }
   fsWriteProducts(products);
