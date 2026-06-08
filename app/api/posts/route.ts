@@ -2,7 +2,7 @@ import { readPosts, createPost } from "@/lib/posts";
 import { isAuthenticated } from "@/lib/auth";
 
 export async function GET() {
-  return Response.json(readPosts());
+  return Response.json(await readPosts());
 }
 
 export async function POST(request: Request) {
@@ -13,6 +13,6 @@ export async function POST(request: Request) {
   if (!text?.trim() && !images?.length) {
     return Response.json({ error: "Post cannot be empty" }, { status: 400 });
   }
-  const post = createPost(text?.trim() ?? "", images ?? []);
+  const post = await createPost(text?.trim() ?? "", images ?? []);
   return Response.json(post, { status: 201 });
 }

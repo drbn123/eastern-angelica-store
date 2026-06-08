@@ -3,7 +3,7 @@ import { readProducts } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const releases = readProducts();
+export default async function HomePage() {
+  const releases = await readProducts();
   return <HomeHero releases={releases} />;
 }

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   const authed = await isAuthenticated();
   if (!authed) return <AdminLogin />;
-  const posts = readPosts();
-  const products = readProducts();
+  const posts = await readPosts();
+  const products = await readProducts();
   return <AdminPanel initialPosts={posts} initialProducts={products} />;
 }

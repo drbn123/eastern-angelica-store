@@ -1,43 +1,75 @@
-import fs from "fs";
-import path from "path";
 import { randomUUID } from "crypto";
 import type { Release } from "./types";
 
-const DATA_FILE = path.join(process.cwd(), "data", "products.json");
+const useKV = () => !!process.env.KV_REST_API_URL;
 
-export function readProducts(): Release[] {
+async function kvGet<T>(key: string): Promise<T | null> {
+  const { kv } = await import("@vercel/kv");
+  return kv.get<T>(key);
+}
+
+async function kvSet(key: string, value: unknown): Promise<void> {
+  const { kv } = await import("@vercel/kv");
+  await kv.set(key, value);
+}
+
+function fsReadProducts(): Release[] {
   try {
-    if (!fs.existsSync(DATA_FILE)) return [];
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-  } catch {
-    return [];
+    const fs = require("fs") as typeof import("fs");
+    const path = require("path") as typeof import("path");
+    const file = path.join(process.cwd(), "data", "products.json");
+    if (!fs.existsSync(file)) return [];
+    return JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch { return []; }
+}
+
+function fsWriteProducts(products: Release[]): void {
+  const fs = require("fs") as typeof import("fs");
+  const path = require("path") as typeof import("path");
+  const file = path.join(process.cwd(), "data", "products.json");
+  fs.writeFileSync(file, JSON.stringify(products, null, 2));
+}
+
+export async function readProducts(): Promise<Release[]> {
+  if (useKV()) {
+    const cached = await kvGet<Release[]>("products");
+    if (cached && cached.length > 0) return cached;
+    // First deploy — seed KV from committed products.json
+    const initial = fsReadProducts();
+    if (initial.length > 0) await kvSet("products", initial);
+    return initial;
   }
+  return fsReadProducts();
 }
 
-function writeProducts(products: Release[]): void {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
+async function writeProducts(products: Release[]): Promise<void> {
+  if (useKV()) {
+    await kvSet("products", products);
+    return;
+  }
+  fsWriteProducts(products);
 }
 
-export function createProduct(data: Omit<Release, "id">): Release {
-  const products = readProducts();
+export async function createProduct(data: Omit<Release, "id">): Promise<Release> {
+  const products = await readProducts();
   const product: Release = { id: randomUUID(), ...data };
-  writeProducts([...products, product]);
+  await writeProducts([...products, product]);
   return product;
 }
 
-export function updateProduct(id: string, data: Partial<Omit<Release, "id">>): Release | null {
-  const products = readProducts();
+export async function updateProduct(id: string, data: Partial<Omit<Release, "id">>): Promise<Release | null> {
+  const products = await readProducts();
   const idx = products.findIndex((p) => p.id === id);
   if (idx === -1) return null;
   products[idx] = { ...products[idx], ...data };
-  writeProducts(products);
+  await writeProducts(products);
   return products[idx];
 }
 
-export function deleteProduct(id: string): boolean {
-  const products = readProducts();
+export async function deleteProduct(id: string): Promise<boolean> {
+  const products = await readProducts();
   const next = products.filter((p) => p.id !== id);
   if (next.length === products.length) return false;
-  writeProducts(next);
+  await writeProducts(next);
   return true;
 }

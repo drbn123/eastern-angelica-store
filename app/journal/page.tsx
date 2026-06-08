@@ -10,8 +10,8 @@ function formatDate(iso: string) {
   });
 }
 
-export default function JournalPage() {
-  const posts = readPosts();
+export default async function JournalPage() {
+  const posts = await readPosts();
 
   return (
     <>

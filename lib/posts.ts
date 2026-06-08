@@ -1,8 +1,4 @@
-import fs from "fs";
-import path from "path";
 import { randomUUID } from "crypto";
-
-const DATA_FILE = path.join(process.cwd(), "data", "posts.json");
 
 export interface Post {
   id: string;
@@ -11,32 +7,61 @@ export interface Post {
   createdAt: string;
 }
 
-export function readPosts(): Post[] {
+const useKV = () => !!process.env.KV_REST_API_URL;
+
+async function kvGet<T>(key: string): Promise<T | null> {
+  const { kv } = await import("@vercel/kv");
+  return kv.get<T>(key);
+}
+
+async function kvSet(key: string, value: unknown): Promise<void> {
+  const { kv } = await import("@vercel/kv");
+  await kv.set(key, value);
+}
+
+function fsReadPosts(): Post[] {
   try {
-    if (!fs.existsSync(DATA_FILE)) return [];
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-  } catch {
-    return [];
+    const fs = require("fs") as typeof import("fs");
+    const path = require("path") as typeof import("path");
+    const file = path.join(process.cwd(), "data", "posts.json");
+    if (!fs.existsSync(file)) return [];
+    return JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch { return []; }
+}
+
+function fsWritePosts(posts: Post[]): void {
+  const fs = require("fs") as typeof import("fs");
+  const path = require("path") as typeof import("path");
+  const file = path.join(process.cwd(), "data", "posts.json");
+  fs.writeFileSync(file, JSON.stringify(posts, null, 2));
+}
+
+export async function readPosts(): Promise<Post[]> {
+  if (useKV()) {
+    return (await kvGet<Post[]>("posts")) ?? [];
   }
+  return fsReadPosts();
 }
 
-function writePosts(posts: Post[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(posts, null, 2));
+async function writePosts(posts: Post[]): Promise<void> {
+  if (useKV()) {
+    await kvSet("posts", posts);
+    return;
+  }
+  fsWritePosts(posts);
 }
 
-export function createPost(text: string, images: string[]): Post {
-  const posts = readPosts();
+export async function createPost(text: string, images: string[]): Promise<Post> {
+  const posts = await readPosts();
   const post: Post = { id: randomUUID(), text, images, createdAt: new Date().toISOString() };
-  writePosts([post, ...posts]);
+  await writePosts([post, ...posts]);
   return post;
 }
 
-export function deletePost(id: string): boolean {
-  const posts = readPosts();
+export async function deletePost(id: string): Promise<boolean> {
+  const posts = await readPosts();
   const next = posts.filter((p) => p.id !== id);
   if (next.length === posts.length) return false;
-  writePosts(next);
+  await writePosts(next);
   return true;
 }
