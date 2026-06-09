@@ -1,16 +1,17 @@
 import { cookies } from "next/headers";
-import { CREDENTIALS, SESSION_COOKIE, SESSION_VALUE } from "@/lib/auth";
+import { checkCredentials, createSessionToken, SESSION_COOKIE, SESSION_TTL_MS } from "@/lib/auth";
 
 export async function POST(request: Request) {
   const { username, password } = await request.json();
-  if (username !== CREDENTIALS.username || password !== CREDENTIALS.password) {
+  if (!checkCredentials(username, password)) {
     return Response.json({ error: "Invalid credentials" }, { status: 401 });
   }
   const store = await cookies();
-  store.set(SESSION_COOKIE, SESSION_VALUE, {
+  store.set(SESSION_COOKIE, createSessionToken(), {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: SESSION_TTL_MS / 1000,
     sameSite: "lax",
   });
   return Response.json({ ok: true });

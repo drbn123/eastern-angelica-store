@@ -52,6 +52,22 @@ export async function createPost(text: string, images: string[]): Promise<Post> 
   return post;
 }
 
+export async function updatePost(
+  id: string,
+  data: { text?: string; images?: string[] }
+): Promise<Post | null> {
+  const posts = await readPosts();
+  const idx = posts.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  posts[idx] = {
+    ...posts[idx],
+    text: data.text ?? posts[idx].text,
+    images: data.images ?? posts[idx].images,
+  };
+  await writePosts(posts);
+  return posts[idx];
+}
+
 export async function deletePost(id: string): Promise<boolean> {
   const posts = await readPosts();
   const next = posts.filter((p) => p.id !== id);
