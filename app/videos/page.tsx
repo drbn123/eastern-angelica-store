@@ -8,6 +8,15 @@ interface Video {
   published: string;
 }
 
+// The WABIYO channel hosts several artists (Kuzko, Luca Dixon, WABIYO…) and
+// titles follow an "Artist - Track" format. Keep only tracks whose lead artist
+// is Kuzko — this includes his "(ft. …)" tracks and excludes ones where Kuzko
+// is only a guest.
+function isByKuzko(title: string): boolean {
+  const artist = title.split(/\s[-–—]\s/)[0].trim().toLowerCase();
+  return /^kuzko\b/.test(artist);
+}
+
 function parseRSS(xml: string): Video[] {
   const entries = xml.match(/<entry>([\s\S]*?)<\/entry>/g) ?? [];
   return entries.map((entry) => ({
@@ -27,7 +36,7 @@ export default async function VideosPage() {
       { next: { revalidate: 3600 } }
     );
     const xml = await res.text();
-    videos = parseRSS(xml);
+    videos = parseRSS(xml).filter((v) => isByKuzko(v.title));
   } catch {
     // show empty grid if fetch fails
   }
@@ -36,7 +45,7 @@ export default async function VideosPage() {
     <main className="videos-page">
       <div className="videos-hd">
         <h1>
-          <i>Videos —</i> <b>WABIYO channel.</b>
+          <i>Videos —</i> <b>Kuzko.</b>
         </h1>
         <p className="videos-sub">
           {videos.length > 0
