@@ -49,7 +49,6 @@ export default function Footer() {
             </svg>
           </a>
         </div>
-        <span>IG · BC · Discogs</span>
       </footer>
 
     </>
