@@ -944,6 +944,22 @@ header.main {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line);
 }
+.an-header-right { display: flex; align-items: center; gap: 8px; }
+
+/* Refresh button */
+.an-refresh-btn {
+  background: none; border: 1px solid var(--line); padding: 4px 8px;
+  color: var(--fg-dim); cursor: pointer; display: flex; align-items: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+.an-refresh-btn:hover:not(:disabled) { color: var(--fg); border-color: var(--fg-dim); }
+.an-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.an-refresh-btn svg { width: 14px; height: 14px; display: block; }
+.an-refresh-btn.spinning svg { animation: an-spin 0.7s linear infinite; }
+@keyframes an-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 
 /* Range tabs */
 .an-range-tabs { display: flex; gap: 4px; }

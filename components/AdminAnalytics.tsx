@@ -220,14 +220,19 @@ function StatusBar({ label, count, total, cls }: {
 export default function AdminAnalytics({ orders }: { orders: Order[] }) {
   const [data, setData] = useState<AnalyticsPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [range, setRange] = useState<7 | 30>(7);
 
-  useEffect(() => {
+  function fetchData(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     fetch("/api/analytics")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+      .then((d) => { setData(d); setLoading(false); setRefreshing(false); })
+      .catch(() => { setLoading(false); setRefreshing(false); });
+  }
+
+  useEffect(() => { fetchData(); }, []);
 
   const orderStats = deriveOrderStats(orders);
 
@@ -243,9 +248,21 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
       {/* ── Range selector ── */}
       <div className="an-header">
         <span className="admin-topbar-title">Analytics</span>
-        <div className="an-range-tabs">
-          <button className={`an-range-tab${range === 7 ? " on" : ""}`} onClick={() => setRange(7)}>7 days</button>
-          <button className={`an-range-tab${range === 30 ? " on" : ""}`} onClick={() => setRange(30)}>30 days</button>
+        <div className="an-header-right">
+          <button
+            className={`an-refresh-btn${refreshing ? " spinning" : ""}`}
+            onClick={() => fetchData(true)}
+            disabled={refreshing}
+            title="Refresh data"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className="an-range-tabs">
+            <button className={`an-range-tab${range === 7 ? " on" : ""}`} onClick={() => setRange(7)}>7 days</button>
+            <button className={`an-range-tab${range === 30 ? " on" : ""}`} onClick={() => setRange(30)}>30 days</button>
+          </div>
         </div>
       </div>
 
