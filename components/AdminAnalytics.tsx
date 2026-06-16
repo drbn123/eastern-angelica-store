@@ -30,6 +30,7 @@ interface AnalyticsPayload {
   totalViews7: number;
   topCountries: { country: string; count: number }[];
   topPaths: { path: string; count: number }[];
+  topReferrers: { source: string; count: number }[];
   cartAdds: number;
   cartCheckoutStarts: number;
 }
@@ -333,6 +334,22 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
               }))}
             />
           </>
+        )}
+      </div>
+
+      {/* ── Traffic sources ── */}
+      <div className="an-section">
+        <p className="an-section-title">Traffic sources</p>
+        {loading ? (
+          <div className="an-loading">Loading…</div>
+        ) : (
+          <BarChart
+            label=""
+            items={(data?.topReferrers ?? []).map((r) => ({
+              label: r.source,
+              count: r.count,
+            }))}
+          />
         )}
       </div>
 

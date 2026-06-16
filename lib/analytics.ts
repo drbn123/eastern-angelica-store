@@ -33,6 +33,8 @@ export interface AnalyticsData {
   topCountries: { country: string; count: number }[];
   // Top paths: { path: "/store", count: 12 }[]
   topPaths: { path: string; count: number }[];
+  // Top referrers / traffic sources: { source: "google.com", count: 8 }[]
+  topReferrers: { source: string; count: number }[];
   // Cart events (last 30 days)
   cartAdds: number;
   cartCheckoutStarts: number;
@@ -74,6 +76,16 @@ export async function trackPageView(event: Omit<PageViewEvent, "ts">): Promise<v
   // Increment path counter
   const safePath = event.path.slice(0, 80); // guard against huge paths
   await client.zincrby("analytics:paths", 1, safePath || "/");
+
+  // Increment referrer counter — normalise to hostname only
+  if (event.referrer) {
+    try {
+      const host = new URL(event.referrer).hostname.replace(/^www\./, "");
+      if (host) await client.zincrby("analytics:referrers", 1, host);
+    } catch { /* ignore malformed URLs */ }
+  } else {
+    await client.zincrby("analytics:referrers", 1, "(direct)");
+  }
 }
 
 /** Call this when a cart event happens (client-side via API). */
@@ -154,7 +166,14 @@ export async function getAnalytics(): Promise<Omit<AnalyticsData, "totalOrders" 
     } catch { /* skip */ }
   }
 
-  return { dailyViews, totalViews30, totalViews7, topCountries, topPaths, cartAdds, cartCheckoutStarts };
+  // --- Top referrers ---
+  const referrersRaw = await client.zrange<string[]>("analytics:referrers", 0, 9, { rev: true, withScores: true });
+  const topReferrers: { source: string; count: number }[] = [];
+  for (let i = 0; i < referrersRaw.length; i += 2) {
+    topReferrers.push({ source: String(referrersRaw[i]), count: Number(referrersRaw[i + 1]) });
+  }
+
+  return { dailyViews, totalViews30, totalViews7, topCountries, topPaths, topReferrers, cartAdds, cartCheckoutStarts };
 }
 
 function emptyAnalytics() {
@@ -164,5 +183,5 @@ function emptyAnalytics() {
     const d = new Date(now - i * 24 * 60 * 60 * 1000);
     dailyViews.push({ date: d.toISOString().slice(0, 10), count: 0 });
   }
-  return { dailyViews, totalViews30: 0, totalViews7: 0, topCountries: [], topPaths: [], cartAdds: 0, cartCheckoutStarts: 0 };
+  return { dailyViews, totalViews30: 0, totalViews7: 0, topCountries: [], topPaths: [], topReferrers: [], cartAdds: 0, cartCheckoutStarts: 0 };
 }
