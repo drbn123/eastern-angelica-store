@@ -61,7 +61,7 @@ export default function HomeHero({ releases, videoStrip }: { releases: Release[]
                       {r.format} · {r.edition}
                     </span>
                   </div>
-                  <span className="v0-recent-price">£{r.price.gbp}</span>
+                  <span className="v0-recent-price">€{r.price}</span>
                 </Link>
               </li>
             ))}
