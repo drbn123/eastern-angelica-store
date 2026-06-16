@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ui_mode: "embedded" as any,
+    ui_mode: "embedded_page" as any,
     payment_method_types: currency === "gbp"
       ? ["card"]
       : ["card", "blik", "p24"],
