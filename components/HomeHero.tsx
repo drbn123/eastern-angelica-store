@@ -44,7 +44,7 @@ export default function HomeHero({ releases }: { releases: Release[] }) {
                       hovered === i && r.cover.split("?")[0].toLowerCase().endsWith(".gif") ? (
                         <img src={r.cover} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                       ) : (
-                        <Image src={r.cover} alt={r.title} fill style={{ objectFit: "cover" }} unoptimized={r.cover.split("?")[0].toLowerCase().endsWith(".gif")} />
+                        <Image src={r.cover} alt={r.title} fill style={{ objectFit: "cover" }} />
                       )
                     ) : (
                       <div

@@ -28,7 +28,7 @@ export default function Cover({ idx, release, className = "" }: Props) {
         {gif && hovered ? (
           <img src={photo} alt={release?.title ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         ) : (
-          <Image src={photo} alt={release?.title ?? ""} fill style={{ objectFit: "cover" }} unoptimized={gif} />
+          <Image src={photo} alt={release?.title ?? ""} fill style={{ objectFit: "cover" }} />
         )}
       </div>
     );
