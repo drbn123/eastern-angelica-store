@@ -35,7 +35,7 @@ export default function GridView({ releases, onProductClick }: { releases: Relea
     <section className="v1">
       <div className="hero">
         <h1>
-          <i>Catalogue —</i>
+          <i>Catalogue</i>
         </h1>
       </div>
 
