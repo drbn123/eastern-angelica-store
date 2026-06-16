@@ -636,6 +636,7 @@ footer.legal { padding: 16px 20px; border-top: 1px solid var(--line); display: f
 .v0-nl-right { color: var(--fg-dim); font-family: var(--mono); font-size: 10px; }
 .v0-nl-socials { color: var(--fg-dim); font-family: var(--mono); font-size: 10px; }
 .v0-footerbar { grid-template-columns: 1fr auto; }
+.v0-legal { grid-column: 1 / -1; grid-row: 3; background: var(--bg); }
 .v0-links { display: flex; align-items: center; gap: 18px; }
 .v0-link { display: inline-flex; color: var(--fg-dim); transition: color 0.15s, transform 0.15s; }
 .v0-link:hover { color: var(--fg); transform: translateY(-1px); }

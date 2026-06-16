@@ -69,8 +69,8 @@ export default function HomeHero({ releases, videoStrip }: { releases: Release[]
         </aside>
 
         {videoStrip}
-        <div className="v0-newsletter v0-footerbar">
-          <span className="v0-nl-right">© EA Recordings 2026</span>
+        <footer className="legal v0-legal">
+          <span>© 2026 Cosmo · All rights reserved</span>
           <div className="v0-links">
             <a
               href="https://open.spotify.com/artist/0XVnumO54Q7ZnwubBDRCZU"
@@ -106,7 +106,7 @@ export default function HomeHero({ releases, videoStrip }: { releases: Release[]
               </svg>
             </a>
           </div>
-        </div>
+        </footer>
       </section>
     </>
   );
