@@ -3,6 +3,7 @@
 import Cover from "@/components/Cover";
 import { useCart } from "@/context/CartContext";
 import type { Release } from "@/lib/types";
+import { formatPrice, variantPrice } from "@/lib/money";
 
 const PINS = [
   { size: "lg", top: 60, left: 40, rot: -4 },
@@ -16,7 +17,7 @@ const PINS = [
 ];
 
 export default function BoardView({ releases }: { releases: Release[] }) {
-  const { cart, addToCart } = useCart();
+  const { cart, addToCart, currency } = useCart();
 
   return (
     <section className="v2">
@@ -75,7 +76,7 @@ export default function BoardView({ releases }: { releases: Release[] }) {
                   <div className="artist">{r.artist}</div>
                   <h3>{r.title}</h3>
                 </div>
-                <div className="price">€{r.price}</div>
+                <div className="price">{formatPrice(variantPrice(r.variants[0], currency), currency)}</div>
               </div>
             </div>
           );

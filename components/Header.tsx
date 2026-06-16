@@ -13,7 +13,7 @@ const NAV = [
 
 export default function Header() {
   const pathname = usePathname();
-  const { cartCount, bump, openCart } = useCart();
+  const { cartCount, bump, openCart, currency, setCurrency } = useCart();
 
   return (
     <header className="main">
@@ -28,7 +28,13 @@ export default function Header() {
       <div />
 
       <div className="right">
-        <span style={{ color: "var(--fg-dim)", cursor: "pointer" }}>Search</span>
+        <button
+          className="currency-toggle"
+          onClick={() => setCurrency(currency === "gbp" ? "pln" : "gbp")}
+          title="Switch currency"
+        >
+          {currency === "gbp" ? "£ GBP" : "zł PLN"}
+        </button>
         <button className={`cart-btn${bump ? " bump" : ""}`} onClick={openCart}>
           Cart <span className="count">{String(cartCount).padStart(2, "0")}</span>
         </button>

@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import Header from "@/components/Header";
 import CartSidebar from "@/components/CartSidebar";
 import Toast from "@/components/Toast";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CartProvider>
             <Header />
             {children}
+            <AnalyticsTracker />
             <CartSidebar />
             <Toast />
           </CartProvider>

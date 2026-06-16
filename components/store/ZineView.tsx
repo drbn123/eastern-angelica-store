@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Cover from "@/components/Cover";
 import { useCart } from "@/context/CartContext";
 import type { Release } from "@/lib/types";
+import { formatPrice, variantPrice } from "@/lib/money";
 
 const CAT_NAMES: Record<string, string> = {
   LP: "long-play vinyl",
@@ -17,7 +18,7 @@ const CAT_NAMES: Record<string, string> = {
 };
 
 export default function ZineView({ releases, initialIdx = 0 }: { releases: Release[]; initialIdx?: number }) {
-  const { cart, addToCart } = useCart();
+  const { cart, addToCart, currency } = useCart();
   const [idx, setIdx] = useState(initialIdx);
   const [vIdx, setVIdx] = useState(0);
 
@@ -113,8 +114,8 @@ export default function ZineView({ releases, initialIdx = 0 }: { releases: Relea
           )}
           <div className="buy">
             <div className="price-xl">
-              €{variant.p}{" "}
-              <span style={{ fontSize: 14, color: "var(--fg-dim)" }}>eur</span>
+              {formatPrice(variantPrice(variant, currency), currency)}{" "}
+              <span style={{ fontSize: 14, color: "var(--fg-dim)" }}>{currency}</span>
             </div>
             <button
               className={`buy-btn${inCartItem ? " added" : ""}`}

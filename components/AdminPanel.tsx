@@ -5,7 +5,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Post } from "@/lib/posts";
 import type { Release } from "@/lib/types";
+import type { Order } from "@/lib/orders";
 import AdminProducts from "@/components/AdminProducts";
+import AdminOrders from "@/components/AdminOrders";
+import AdminAnalytics from "@/components/AdminAnalytics";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -255,9 +258,17 @@ function PostEditor({
   );
 }
 
-export default function AdminPanel({ initialPosts, initialProducts }: { initialPosts: Post[]; initialProducts: Release[] }) {
+export default function AdminPanel({
+  initialPosts,
+  initialProducts,
+  initialOrders,
+}: {
+  initialPosts: Post[];
+  initialProducts: Release[];
+  initialOrders: Order[];
+}) {
   const router = useRouter();
-  const [tab, setTab] = useState<"journal" | "products">("journal");
+  const [tab, setTab] = useState<"journal" | "products" | "orders" | "analytics">("journal");
   const [posts, setPosts] = useState<Post[]>(initialPosts);
 
   async function handleLogout() {
@@ -271,12 +282,20 @@ export default function AdminPanel({ initialPosts, initialProducts }: { initialP
         <div className="admin-tabs">
           <button className={`admin-tab${tab === "journal" ? " on" : ""}`} onClick={() => setTab("journal")}>Journal</button>
           <button className={`admin-tab${tab === "products" ? " on" : ""}`} onClick={() => setTab("products")}>Products</button>
+          <button className={`admin-tab${tab === "orders" ? " on" : ""}`} onClick={() => setTab("orders")}>
+            Orders{initialOrders.filter((o) => o.status === "paid").length > 0
+              ? ` · ${initialOrders.filter((o) => o.status === "paid").length} new`
+              : ""}
+          </button>
+          <button className={`admin-tab${tab === "analytics" ? " on" : ""}`} onClick={() => setTab("analytics")}>Analytics</button>
         </div>
         <button className="admin-btn-ghost" onClick={handleLogout}>Sign out</button>
       </div>
 
       {tab === "journal" && <JournalTab posts={posts} setPosts={setPosts} />}
       {tab === "products" && <AdminProducts initialProducts={initialProducts} />}
+      {tab === "orders" && <AdminOrders initialOrders={initialOrders} />}
+      {tab === "analytics" && <AdminAnalytics orders={initialOrders} />}
     </div>
   );
 }

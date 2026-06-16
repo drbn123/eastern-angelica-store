@@ -7,15 +7,15 @@ import type { Release } from "@/lib/types";
 const FORMATS = ["CD", "LP", '12"', '7"', "CS", "TEE", "VEST", "LS", "BOOK", "BUNDLE", "OTHER"];
 const EMPTY: Omit<Release, "id"> = {
   title: "", artist: "", format: "CD", edition: "", year: new Date().getFullYear().toString(),
-  cat: "", price: 0, variants: [{ k: "Standard", p: 0 }], tag: "", cover: "", back: "",
-  placeholder: false, desc: "",
+  cat: "", price: { gbp: 0, pln: 0 }, variants: [{ k: "Standard", gbp: 0, pln: 0 }], tag: "",
+  cover: "", back: "", placeholder: false, desc: "",
 };
 
 function VariantEditor({
   variants, onChange,
 }: {
-  variants: { k: string; p: number }[];
-  onChange: (v: { k: string; p: number }[]) => void;
+  variants: { k: string; gbp: number; pln: number }[];
+  onChange: (v: { k: string; gbp: number; pln: number }[]) => void;
 }) {
   return (
     <div className="ap-variants">
@@ -34,18 +34,29 @@ function VariantEditor({
           <input
             className="admin-input ap-variant-price"
             type="number"
-            placeholder="€"
-            value={v.p}
+            placeholder="£ GBP"
+            value={v.gbp}
             onChange={(e) => {
               const next = [...variants];
-              next[i] = { ...next[i], p: +e.target.value };
+              next[i] = { ...next[i], gbp: +e.target.value };
+              onChange(next);
+            }}
+          />
+          <input
+            className="admin-input ap-variant-price"
+            type="number"
+            placeholder="zł PLN"
+            value={v.pln}
+            onChange={(e) => {
+              const next = [...variants];
+              next[i] = { ...next[i], pln: +e.target.value };
               onChange(next);
             }}
           />
           <button className="admin-btn-ghost ap-remove" onClick={() => onChange(variants.filter((_, j) => j !== i))}>×</button>
         </div>
       ))}
-      <button className="admin-btn-ghost ap-add-variant" onClick={() => onChange([...variants, { k: "", p: 0 }])}>
+      <button className="admin-btn-ghost ap-add-variant" onClick={() => onChange([...variants, { k: "", gbp: 0, pln: 0 }])}>
         + Add variant
       </button>
     </div>
@@ -98,8 +109,13 @@ function ProductForm({
         <label className="ap-label">Year
           <input className="admin-input" value={form.year} onChange={(e) => set("year", e.target.value)} />
         </label>
-        <label className="ap-label">Base price (€)
-          <input className="admin-input" type="number" value={form.price} onChange={(e) => set("price", +e.target.value)} />
+        <label className="ap-label">Base price £ GBP
+          <input className="admin-input" type="number" value={form.price.gbp}
+            onChange={(e) => set("price", { ...form.price, gbp: +e.target.value })} />
+        </label>
+        <label className="ap-label">Base price zł PLN
+          <input className="admin-input" type="number" value={form.price.pln}
+            onChange={(e) => set("price", { ...form.price, pln: +e.target.value })} />
         </label>
         <label className="ap-label">Tag
           <input className="admin-input" placeholder="cd / merch / book …" value={form.tag} onChange={(e) => set("tag", e.target.value)} />
@@ -110,7 +126,7 @@ function ProductForm({
         <textarea className="admin-input ap-desc" rows={3} value={form.desc} onChange={(e) => set("desc", e.target.value)} />
       </label>
 
-      <div className="ap-label">Variants
+      <div className="ap-label">Variants (£ GBP · zł PLN)
         <VariantEditor variants={form.variants} onChange={(v) => set("variants", v)} />
       </div>
 
@@ -229,7 +245,9 @@ export default function AdminProducts({ initialProducts }: { initialProducts: Re
                 </div>
                 <div className="ap-product-info">
                   <span className="ap-product-title">{p.title}</span>
-                  <span className="ap-product-meta">{p.format} · {p.cat} · €{p.price}</span>
+                  <span className="ap-product-meta">
+                    {p.format} · {p.cat} · £{p.price.gbp}{p.price.pln > 0 ? ` / ${p.price.pln} zł` : ""}
+                  </span>
                   {p.placeholder && <span className="placeholder-tag">placeholder</span>}
                 </div>
                 <div className="ap-product-actions">

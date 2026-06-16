@@ -1,6 +1,7 @@
 export interface Variant {
   k: string;
-  p: number;
+  gbp: number;
+  pln: number;
 }
 
 export interface Release {
@@ -11,7 +12,7 @@ export interface Release {
   edition: string;
   year: string;
   cat: string;
-  price: number;
+  price: { gbp: number; pln: number };
   variants: Variant[];
   tag: string;
   cover?: string;

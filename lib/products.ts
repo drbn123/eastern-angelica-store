@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import type { Release } from "./types";
+import type { Release, Variant } from "./types";
 
 const useKV = () => !!process.env.KV_REST_API_URL;
 
@@ -29,16 +29,35 @@ function fsWriteProducts(products: Release[]): void {
   fs.writeFileSync(path.join(process.cwd(), "data", "products.json"), JSON.stringify(products, null, 2));
 }
 
+// Handles old format {p: number} → {gbp: number, pln: 0} transparently
+function normalizeProduct(raw: unknown): Release {
+  const r = raw as Record<string, unknown>;
+  const price = typeof r.price === "number"
+    ? { gbp: r.price as number, pln: 0 }
+    : (r.price as { gbp: number; pln: number }) ?? { gbp: 0, pln: 0 };
+
+  const variants: Variant[] = ((r.variants ?? []) as Record<string, unknown>[]).map((v) => {
+    if (typeof (v as { p?: number }).p === "number") {
+      return { k: v.k as string, gbp: (v as { p: number }).p, pln: 0 };
+    }
+    return v as unknown as Variant;
+  });
+
+  return { ...(r as unknown as Release), price, variants };
+}
+
 export async function readProducts(): Promise<Release[]> {
   if (useKV()) {
-    const cached = await kvGet<Release[]>("products");
-    if (cached && Array.isArray(cached) && cached.length > 0) return cached;
-    // First deploy — seed from committed products.json
+    const cached = await kvGet<unknown[]>("products");
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return cached.map(normalizeProduct);
+    }
     const initial = fsReadProducts();
     if (initial.length > 0) await kvSet("products", initial);
     return initial;
   }
-  return fsReadProducts();
+  const raw = fsReadProducts() as unknown[];
+  return raw.map(normalizeProduct);
 }
 
 async function writeProducts(products: Release[]): Promise<void> {

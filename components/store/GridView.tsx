@@ -4,6 +4,7 @@ import { useState } from "react";
 import Cover from "@/components/Cover";
 import { useCart } from "@/context/CartContext";
 import type { Release } from "@/lib/types";
+import { formatPrice, variantPrice } from "@/lib/money";
 
 const FILTERS: [string, string][] = [
   ["all", "All"],
@@ -23,7 +24,7 @@ function matchFilter(format: string, filter: string): boolean {
 }
 
 export default function GridView({ releases, onProductClick }: { releases: Release[]; onProductClick?: (idx: number) => void }) {
-  const { cart, addToCart } = useCart();
+  const { cart, addToCart, currency } = useCart();
   const [filter, setFilter] = useState("all");
   const [picks, setPicks] = useState<Record<string, number>>(
     () => Object.fromEntries(releases.map((r) => [r.id, 0]))
@@ -73,7 +74,7 @@ export default function GridView({ releases, onProductClick }: { releases: Relea
                   <div className="artist">{r.artist}</div>
                   <h3>{r.title}</h3>
                 </div>
-                <div className="price">€{variant.p}</div>
+                <div className="price">{formatPrice(variantPrice(variant, currency), currency)}</div>
               </div>
               <dl className="kv">
                 <dt>Format</dt>
@@ -102,7 +103,7 @@ export default function GridView({ releases, onProductClick }: { releases: Relea
                   >
                     {r.variants.map((v, vi) => (
                       <option key={vi} value={vi}>
-                        {v.k} — €{v.p}
+                        {v.k} — {formatPrice(variantPrice(v, currency), currency)}
                       </option>
                     ))}
                   </select>
