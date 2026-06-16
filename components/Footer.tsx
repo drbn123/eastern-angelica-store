@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
+import ContactForm from "@/components/ContactForm";
 
 export default function Footer() {
   return (
@@ -10,14 +11,13 @@ export default function Footer() {
           <div className="brand">
             <Image
               src="/assets/ea-monument.png"
-              alt="EA"
+              alt="Cosmo"
               width={56}
               height={56}
               className="footer-monument"
             />
-            <span>Eastern</span>
-            <span>Angelica</span>
-            <small>EA Recordings · Est. 2024</small>
+            <span>Kuzko</span>
+            <small>Cosmo · Est. 2024</small>
           </div>
         </div>
         <div>
@@ -28,23 +28,10 @@ export default function Footer() {
           <Link href="/store">Books</Link>
           <Link href="/store">Merch</Link>
         </div>
-        <div>
-          <h4>Label</h4>
-          <Link href="/label">About</Link>
-          <Link href="/artists">Artists</Link>
-          <Link href="/journal">Journal</Link>
-          <Link href="/label">Press</Link>
-        </div>
-        <div>
-          <h4>Help</h4>
-          <Link href="/label">Shipping</Link>
-          <Link href="/label">Returns</Link>
-          <Link href="/label">Contact</Link>
-          <Link href="/label">FAQ</Link>
-        </div>
+        <ContactForm />
       </footer>
       <footer className="legal">
-        <Link href={"/admin" as Route} style={{ color: "inherit", textDecoration: "none" }}>© 2026 EA Recordings · All rights reserved</Link>
+        <Link href={"/admin" as Route} style={{ color: "inherit", textDecoration: "none" }}>© 2026 Cosmo · All rights reserved</Link>
         <span>Made in PL / Pressed in CZ</span>
         <span>IG · BC · Discogs</span>
       </footer>
