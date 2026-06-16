@@ -14,15 +14,22 @@ const FILL: React.CSSProperties = {
 };
 
 /**
- * Shows a GIF's first frame as a static poster (drawn to a canvas) when idle,
- * and the live, looping animation only while hovered. The animated <img> is
- * mounted fresh on each hover so it always restarts from frame 0 and stops
- * the moment the cursor leaves.
+ * Shows a GIF's first frame as a static poster (drawn to a canvas) while idle,
+ * and the live, looping animation only while hovered.
+ *
+ * To guarantee the animation always restarts from frame 0 (browsers otherwise
+ * share a single animation timeline per GIF URL and resume mid-loop), the GIF
+ * is fetched once into an in-memory Blob and a fresh object URL is minted on
+ * each hover — a new URL is a new resource identity, so it decodes from the
+ * start. No re-download, so it stays smooth.
  */
 export default function GifHover({ src, alt }: { src: string; alt: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [playing, setPlaying] = useState(false);
+  const blobRef = useRef<Blob | null>(null);
+  const urlRef = useRef<string | null>(null);
+  const [playSrc, setPlaySrc] = useState<string | null>(null);
 
+  // Draw the first frame onto a canvas as the static idle poster.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -35,14 +42,39 @@ export default function GifHover({ src, alt }: { src: string; alt: string }) {
     img.src = src;
   }, [src]);
 
+  // Prefetch the GIF bytes once so hovering can replay from a fresh object URL
+  // without hitting the network again.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(src)
+      .then((r) => r.blob())
+      .then((b) => { if (!cancelled) blobRef.current = b; })
+      .catch(() => { /* cross-origin/offline: fall back to raw src on hover */ });
+    return () => {
+      cancelled = true;
+      if (urlRef.current) { URL.revokeObjectURL(urlRef.current); urlRef.current = null; }
+    };
+  }, [src]);
+
+  const play = () => {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    if (blobRef.current) {
+      urlRef.current = URL.createObjectURL(blobRef.current);
+      setPlaySrc(urlRef.current);
+    } else {
+      setPlaySrc(src); // blob not ready yet — degrade gracefully
+    }
+  };
+
+  const stop = () => {
+    setPlaySrc(null);
+    if (urlRef.current) { URL.revokeObjectURL(urlRef.current); urlRef.current = null; }
+  };
+
   return (
-    <div
-      style={{ position: "absolute", inset: 0 }}
-      onMouseEnter={() => setPlaying(true)}
-      onMouseLeave={() => setPlaying(false)}
-    >
+    <div style={{ position: "absolute", inset: 0 }} onMouseEnter={play} onMouseLeave={stop}>
       <canvas ref={canvasRef} style={FILL} aria-hidden />
-      {playing && <img src={src} alt={alt} style={FILL} draggable={false} />}
+      {playSrc && <img src={playSrc} alt={alt} style={FILL} draggable={false} />}
     </div>
   );
 }
