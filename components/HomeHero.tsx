@@ -6,6 +6,7 @@ import { useState } from "react";
 import { coverSvg } from "@/lib/catalog";
 import type { Release } from "@/lib/types";
 import LogoHero from "@/components/LogoHero";
+import GifHover, { isGif } from "@/components/GifHover";
 
 export default function HomeHero({ releases }: { releases: Release[] }) {
   const [hovered, setHovered] = useState<number | null>(null);
@@ -41,8 +42,8 @@ export default function HomeHero({ releases }: { releases: Release[] }) {
                 <Link href="/store" style={{ display: "contents" }}>
                   <div className="v0-recent-thumb">
                     {r.cover ? (
-                      hovered === i && r.cover.split("?")[0].toLowerCase().endsWith(".gif") ? (
-                        <img src={r.cover} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      isGif(r.cover) ? (
+                        <GifHover src={r.cover} alt={r.title} />
                       ) : (
                         <Image src={r.cover} alt={r.title} fill style={{ objectFit: "cover" }} />
                       )
