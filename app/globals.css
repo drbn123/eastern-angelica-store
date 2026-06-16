@@ -609,7 +609,7 @@ footer.legal { padding: 16px 20px; border-top: 1px solid var(--line); display: f
 .v0-recent-format { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v0-recent-price { font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--fg); }
 /* Video strip inside v0 hero section */
-.v0-video-strip { grid-column: 1 / -1; grid-row: 2; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 0; background: var(--bg); overflow: hidden; }
+.v0-video-strip { grid-column: 1 / -1; grid-row: 2; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 0; background: var(--bg); overflow: hidden; min-height: 80px; }
 .v0-vs-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--fg-dim); padding: 0 24px; white-space: nowrap; flex-shrink: 0; border-right: 1px solid var(--line); height: 100%; display: flex; align-items: center; }
 .v0-vs-thumbs { display: flex; flex: 1; height: 100%; }
 .v0-vs-item { display: flex; align-items: center; gap: 14px; padding: 0 20px; border-right: 1px solid var(--line); flex: 1; min-width: 0; text-decoration: none; color: inherit; transition: background 0.12s; }
