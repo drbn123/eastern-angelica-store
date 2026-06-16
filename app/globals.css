@@ -1183,3 +1183,20 @@ header.main {
   from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Stripe embedded checkout modal ── */
+.sc-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 10000; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.sc-modal {
+  background: #fff; width: 100%; max-width: 560px; max-height: 90vh;
+  overflow-y: auto; position: relative;
+}
+.sc-close {
+  position: absolute; top: 12px; right: 16px; background: none; border: none;
+  font-size: 22px; cursor: pointer; color: #666; z-index: 1; line-height: 1;
+}
+.sc-close:hover { color: #000; }
+.sc-body { padding: 8px; }

@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useCart } from "@/context/CartContext";
 import Cover from "@/components/Cover";
 import { formatPrice, variantPrice, toCents, shippingCents, shippingLabel } from "@/lib/money";
 
+const StripeCheckoutModal = dynamic(() => import("@/components/StripeCheckoutModal"), { ssr: false });
+
 export default function CartSidebar() {
   const { cart, cartOpen, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const items = cart
     .map((c) => ({ ...c, release: products.find((r) => r.id === c.id) }))
@@ -29,7 +34,11 @@ export default function CartSidebar() {
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if (data.url) {
+    if (data.clientSecret) {
+      closeCart();
+      setClientSecret(data.clientSecret);
+    } else if (data.url) {
+      // demo mode (no Stripe key)
       clearCart();
       closeCart();
       window.location.href = data.url;
@@ -40,6 +49,12 @@ export default function CartSidebar() {
 
   return (
     <>
+      {clientSecret && (
+        <StripeCheckoutModal
+          clientSecret={clientSecret}
+          onClose={() => { setClientSecret(null); clearCart(); }}
+        />
+      )}
       <div className={`cart-scrim${cartOpen ? " on" : ""}`} onClick={closeCart} />
       <aside className={`cart${cartOpen ? " on" : ""}`} aria-hidden={!cartOpen}>
         <div className="hd">
