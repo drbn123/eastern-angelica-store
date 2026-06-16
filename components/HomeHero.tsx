@@ -41,7 +41,11 @@ export default function HomeHero({ releases }: { releases: Release[] }) {
                 <Link href="/store" style={{ display: "contents" }}>
                   <div className="v0-recent-thumb">
                     {r.cover ? (
-                      <Image src={r.cover} alt={r.title} fill style={{ objectFit: "cover" }} />
+                      hovered === i && r.cover.split("?")[0].toLowerCase().endsWith(".gif") ? (
+                        <img src={r.cover} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      ) : (
+                        <Image src={r.cover} alt={r.title} fill style={{ objectFit: "cover" }} unoptimized={r.cover.split("?")[0].toLowerCase().endsWith(".gif")} />
+                      )
                     ) : (
                       <div
                         style={{ width: "100%", height: "100%" }}
