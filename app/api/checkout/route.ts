@@ -103,8 +103,6 @@ export async function POST(req: NextRequest) {
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ui_mode: "embedded_page" as any,
     payment_method_types: currency === "gbp"
       ? ["card"]
       : ["card", "blik", "p24"],
@@ -125,7 +123,8 @@ export async function POST(req: NextRequest) {
         },
       },
     ],
-    return_url: `${base}/store?order=success&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${base}/store?order=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/store`,
     metadata: { currency },
   });
 
@@ -141,5 +140,5 @@ export async function POST(req: NextRequest) {
     stripeSessionId: session.id,
   });
 
-  return NextResponse.json({ clientSecret: session.client_secret });
+  return NextResponse.json({ url: session.url });
 }

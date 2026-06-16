@@ -1,26 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
+import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import Cover from "@/components/Cover";
 import { formatPrice, variantPrice, toCents, shippingCents, shippingLabel } from "@/lib/money";
 
-const StripeCheckoutModal = dynamic(() => import("@/components/StripeCheckoutModal"), { ssr: false });
-
-// Preload Stripe.js as soon as this component mounts — so it's ready by the time user clicks checkout
-function usePreloadStripe() {
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-      import("@stripe/stripe-js").then(({ loadStripe }) => loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!));
-    }
-  }, []);
-}
-
 export default function CartSidebar() {
-  usePreloadStripe();
   const { cart, cartOpen, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const items = cart
@@ -43,10 +29,7 @@ export default function CartSidebar() {
         body: JSON.stringify({ items: items.map((it) => ({ id: it.id, vIdx: it.vIdx, qty: it.qty })), currency }),
       });
       const data = await res.json();
-      if (data.clientSecret) {
-        closeCart();
-        setClientSecret(data.clientSecret);
-      } else if (data.url) {
+      if (data.url) {
         clearCart();
         closeCart();
         window.location.href = data.url;
@@ -60,12 +43,6 @@ export default function CartSidebar() {
 
   return (
     <>
-      {clientSecret && (
-        <StripeCheckoutModal
-          clientSecret={clientSecret}
-          onClose={() => { setClientSecret(null); clearCart(); }}
-        />
-      )}
       <div className={`cart-scrim${cartOpen ? " on" : ""}`} onClick={closeCart} />
       <aside className={`cart${cartOpen ? " on" : ""}`} aria-hidden={!cartOpen}>
         <div className="hd">
