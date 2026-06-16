@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Order, OrderStatus } from "@/lib/orders";
 import { formatPrice } from "@/lib/money";
 
@@ -153,32 +153,123 @@ function OrderRow({
   );
 }
 
+const STATUS_FILTERS = ["all", "paid", "fulfilled", "shipped", "cancelled", "pending", "refunded"] as const;
+type StatusFilter = typeof STATUS_FILTERS[number];
+
 export default function AdminOrders({ initialOrders }: { initialOrders: Order[] }) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [currencyFilter, setCurrencyFilter] = useState<"all" | "gbp" | "pln">("all");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [search, setSearch] = useState("");
+  const [newCount, setNewCount] = useState(0);
+  const knownIds = useRef(new Set(initialOrders.map((o) => o.id)));
+
+  useEffect(() => {
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch("/api/orders");
+        if (!res.ok) return;
+        const fresh: Order[] = await res.json();
+        const brandNew = fresh.filter((o) => !knownIds.current.has(o.id));
+        if (brandNew.length > 0) {
+          brandNew.forEach((o) => knownIds.current.add(o.id));
+          setOrders(fresh);
+          setNewCount((n) => n + brandNew.length);
+        }
+      } catch {}
+    }, 30_000);
+    return () => clearInterval(poll);
+  }, []);
 
   function handleUpdate(updated: Order) {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
   }
 
-  const paid = orders.filter((o) => o.status === "paid").length;
-  const pending = orders.filter((o) => o.status === "pending").length;
+  const counts: Partial<Record<StatusFilter, number>> = { all: orders.length };
+  for (const o of orders) counts[o.status] = (counts[o.status] ?? 0) + 1;
+
+  const visible = orders
+    .filter((o) => statusFilter === "all" || o.status === statusFilter)
+    .filter((o) => currencyFilter === "all" || o.currency === currencyFilter)
+    .filter((o) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        o.email.toLowerCase().includes(q) ||
+        String(o.number).includes(q) ||
+        o.address?.name?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return sortDir === "desc" ? -diff : diff;
+    });
 
   return (
     <div className="ao-wrap">
       <div className="ao-header">
         <span className="admin-topbar-title">Orders ({orders.length})</span>
-        <div className="ao-stats">
-          {paid > 0 && <span className="ao-badge ao-badge-paid">{paid} paid</span>}
-          {pending > 0 && <span className="ao-badge ao-badge-pending">{pending} pending</span>}
+        {newCount > 0 && (
+          <button className="ao-new-badge" onClick={() => { setNewCount(0); setSortDir("desc"); setStatusFilter("all"); }}>
+            {newCount} new order{newCount > 1 ? "s" : ""} ↓
+          </button>
+        )}
+      </div>
+
+      {/* ── Filter bar ── */}
+      <div className="ao-filters">
+        <div className="ao-filter-status">
+          {(["all", "paid", "fulfilled", "shipped", "pending", "cancelled"] as StatusFilter[]).map((s) => (
+            counts[s] !== undefined || s === "all" ? (
+              <button
+                key={s}
+                className={`ao-filter-btn${statusFilter === s ? " on" : ""}`}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s === "all" ? "All" : STATUS_LABELS[s as OrderStatus]}
+                {counts[s] ? <span className="ao-filter-count">{counts[s]}</span> : null}
+              </button>
+            ) : null
+          ))}
+        </div>
+        <div className="ao-filter-right">
+          <input
+            className="ao-search"
+            placeholder="Search email / EA-1000 / name…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button
+            className={`ao-filter-btn${currencyFilter === "gbp" ? " on" : ""}`}
+            onClick={() => setCurrencyFilter(currencyFilter === "gbp" ? "all" : "gbp")}
+          >
+            £ GBP
+          </button>
+          <button
+            className={`ao-filter-btn${currencyFilter === "pln" ? " on" : ""}`}
+            onClick={() => setCurrencyFilter(currencyFilter === "pln" ? "all" : "pln")}
+          >
+            zł PLN
+          </button>
+          <button
+            className="ao-filter-btn ao-sort-btn"
+            onClick={() => setSortDir((d) => d === "desc" ? "asc" : "desc")}
+            title="Toggle sort order"
+          >
+            {sortDir === "desc" ? "↓ Newest" : "↑ Oldest"}
+          </button>
         </div>
       </div>
 
-      {orders.length === 0 && (
-        <p className="admin-empty">No orders yet — they will appear here after checkout.</p>
+      {visible.length === 0 && (
+        <p className="admin-empty">
+          {orders.length === 0 ? "No orders yet — they will appear here after checkout." : "No orders match the current filters."}
+        </p>
       )}
 
       <div className="ao-list">
-        {orders.map((o) => (
+        {visible.map((o) => (
           <OrderRow key={o.id} order={o} onUpdate={handleUpdate} />
         ))}
       </div>

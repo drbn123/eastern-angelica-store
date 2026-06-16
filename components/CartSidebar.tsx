@@ -5,7 +5,7 @@ import Cover from "@/components/Cover";
 import { formatPrice, variantPrice, toCents, shippingCents, shippingLabel } from "@/lib/money";
 
 export default function CartSidebar() {
-  const { cart, cartOpen, closeCart, updateQty, removeItem, products, currency } = useCart();
+  const { cart, cartOpen, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
 
   const items = cart
     .map((c) => ({ ...c, release: products.find((r) => r.id === c.id) }))
@@ -30,9 +30,11 @@ export default function CartSidebar() {
     });
     const data = await res.json();
     if (data.url) {
+      clearCart();
+      closeCart();
       window.location.href = data.url;
     } else {
-      alert(data.message ?? "Checkout failed — please try again.");
+      alert(data.message ?? data.error ?? "Checkout failed — please try again.");
     }
   };
 

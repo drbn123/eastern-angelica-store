@@ -936,6 +936,46 @@ header.main {
 .ao-note-input { flex: 1; }
 .ao-actions { display: flex; gap: 8px; align-items: center; padding-top: 4px; }
 .ao-cancel-btn { color: var(--fg-dim); }
+.ao-new-badge {
+  background: #16a34a; color: #fff; border: none;
+  padding: 5px 12px; font-family: var(--mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer;
+  animation: ao-pulse 1.5s ease infinite;
+}
+@keyframes ao-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ── Orders filter bar ── */
+.ao-filters {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.ao-filter-status { display: flex; gap: 4px; flex-wrap: wrap; }
+.ao-filter-right { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ao-filter-btn {
+  background: none; border: 1px solid var(--line);
+  padding: 4px 10px; font-family: var(--mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--fg-dim); cursor: pointer; display: flex; align-items: center; gap: 5px;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+}
+.ao-filter-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
+.ao-filter-btn.on { color: var(--fg); border-color: var(--fg); background: color-mix(in oklab, var(--fg), transparent 92%); }
+.ao-filter-count {
+  display: inline-block; background: color-mix(in oklab, var(--fg), transparent 80%);
+  color: var(--fg); padding: 0 5px; font-size: 9px; min-width: 16px; text-align: center;
+}
+.ao-filter-btn.on .ao-filter-count { background: var(--fg); color: var(--bg); }
+.ao-sort-btn { white-space: nowrap; }
+.ao-search {
+  background: none; border: 1px solid var(--line);
+  padding: 4px 10px; font-family: var(--mono); font-size: 10px;
+  color: var(--fg); width: 220px; outline: none;
+}
+.ao-search:focus { border-color: var(--fg-dim); }
+.ao-search::placeholder { color: var(--fg-dim); }
 
 /* ── Analytics dashboard ─────────────────────────────────────────────────── */
 
@@ -1122,3 +1162,24 @@ header.main {
   .an-bar-row { grid-template-columns: 100px 1fr 28px; }
 }
 
+
+/* ── Order success banner ── */
+.order-success-banner {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 14px 28px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  z-index: 9999;
+  white-space: nowrap;
+  animation: banner-in 0.3s ease;
+}
+@keyframes banner-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

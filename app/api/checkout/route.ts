@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { readProducts } from "@/lib/products";
 import { createOrder } from "@/lib/orders";
 import { type Currency, toCents, shippingCents, shippingLabel } from "@/lib/money";
+import { sendWhatsApp } from "@/lib/notify";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -17,10 +18,6 @@ interface CartItemInput {
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ url: null, message: "Stripe not configured yet." }, { status: 503 });
-  }
-
   const body = await req.json() as { items: CartItemInput[]; currency: Currency };
   const { items, currency } = body;
 
@@ -45,13 +42,11 @@ export async function POST(req: NextRequest) {
     if (!variant) continue;
 
     const unitPrice = currency === "gbp" ? variant.gbp : variant.pln;
-    if (unitPrice <= 0) {
-      return NextResponse.json(
-        { error: `${product.title} — ${variant.k}: price not set for ${currency.toUpperCase()}` },
-        { status: 400 },
-      );
-    }
-    const unitCents = toCents(unitPrice);
+    // In demo mode (no PLN prices set yet) treat 0 as the GBP price
+    const effectivePrice = unitPrice > 0 ? unitPrice : (currency === "pln" ? variant.gbp : 0);
+    if (effectivePrice <= 0) continue;
+
+    const unitCents = toCents(effectivePrice);
     subtotalCents += unitCents * item.qty;
 
     lineItems.push({
@@ -71,7 +66,7 @@ export async function POST(req: NextRequest) {
       title: product.title,
       variant: variant.k,
       qty: item.qty,
-      unitPrice,
+      unitPrice: effectivePrice,
       currency,
     });
   }
@@ -81,6 +76,30 @@ export async function POST(req: NextRequest) {
   }
 
   const shipCents = shippingCents(subtotalCents, currency);
+
+  // ── Demo mode: no Stripe key — create order directly and redirect to success ──
+  if (!process.env.STRIPE_SECRET_KEY) {
+    const order = await createOrder({
+      status: "paid",
+      currency,
+      items: orderItems,
+      subtotalCents,
+      shippingCents: shipCents,
+      totalCents: subtotalCents + shipCents,
+      email: "demo@example.com",
+      address: {
+        name: "Demo Customer",
+        line1: "1 Demo Street",
+        city: currency === "gbp" ? "London" : "Warszawa",
+        postal_code: currency === "gbp" ? "EC1A 1BB" : "00-001",
+        country: currency === "gbp" ? "GB" : "PL",
+      },
+      stripeSessionId: `demo_${Date.now()}`,
+      paidAt: new Date().toISOString(),
+    });
+    sendWhatsApp(order);
+    return NextResponse.json({ url: `${base}/store?order=success&demo=${order.number}` });
+  }
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",

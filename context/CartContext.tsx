@@ -16,6 +16,7 @@ interface CartContextValue {
   addToCart: (release: Release, vIdx: number) => void;
   updateQty: (id: string, vIdx: number, delta: number) => void;
   removeItem: (id: string, vIdx: number) => void;
+  clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
 }
@@ -94,6 +95,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => prev.filter((c) => !(c.id === id && c.vIdx === vIdx)));
   }, []);
 
+  const clearCart = useCallback(() => {
+    setCart([]);
+  }, []);
+
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
 
   return (
@@ -110,6 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         updateQty,
         removeItem,
+        clearCart,
         openCart: () => setCartOpen(true),
         closeCart: () => setCartOpen(false),
       }}

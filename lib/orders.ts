@@ -41,64 +41,110 @@ export interface Order {
 
 const useKV = () => !!process.env.KV_REST_API_URL;
 
-async function kv() {
-  const { kv: client } = await import("@vercel/kv");
-  return client;
+async function kvClient() {
+  const { kv } = await import("@vercel/kv");
+  return kv;
 }
 
-async function nextOrderNumber(): Promise<number> {
-  const client = await kv();
+// ── Local file fallback (dev / demo) ──────────────────────────────────────────
+
+function fsReadOrders(): Order[] {
+  try {
+    const fs = require("fs") as typeof import("fs");
+    const path = require("path") as typeof import("path");
+    const file = path.join(process.cwd(), "data", "orders.json");
+    if (!fs.existsSync(file)) return [];
+    return JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch { return []; }
+}
+
+function fsWriteOrders(orders: Order[]): void {
+  const fs = require("fs") as typeof import("fs");
+  const path = require("path") as typeof import("path");
+  fs.writeFileSync(
+    path.join(process.cwd(), "data", "orders.json"),
+    JSON.stringify(orders, null, 2),
+  );
+}
+
+function fsNextOrderNumber(): number {
+  const orders = fsReadOrders();
+  return orders.length === 0 ? 1000 : Math.max(...orders.map((o) => o.number)) + 1;
+}
+
+// ── KV helpers ────────────────────────────────────────────────────────────────
+
+async function kvNextOrderNumber(): Promise<number> {
+  const client = await kvClient();
   const n = await client.incr("orders:counter");
   return n + 999;
 }
 
+// ── Public API ────────────────────────────────────────────────────────────────
+
 export async function createOrder(data: Omit<Order, "id" | "number" | "createdAt">): Promise<Order> {
   const order: Order = {
     id: randomUUID(),
-    number: await nextOrderNumber(),
+    number: useKV() ? await kvNextOrderNumber() : fsNextOrderNumber(),
     createdAt: new Date().toISOString(),
     ...data,
   };
 
   if (useKV()) {
-    const client = await kv();
+    const client = await kvClient();
     await client.set(`order:${order.id}`, order);
     await client.lpush("orders", order.id);
+  } else {
+    const orders = fsReadOrders();
+    fsWriteOrders([order, ...orders]);
   }
 
   return order;
 }
 
 export async function getOrder(id: string): Promise<Order | null> {
-  if (!useKV()) return null;
-  const client = await kv();
-  return client.get<Order>(`order:${id}`);
+  if (useKV()) {
+    const client = await kvClient();
+    return client.get<Order>(`order:${id}`);
+  }
+  return fsReadOrders().find((o) => o.id === id) ?? null;
 }
 
 export async function updateOrder(id: string, data: Partial<Order>): Promise<Order | null> {
-  if (!useKV()) return null;
-  const client = await kv();
-  const existing = await client.get<Order>(`order:${id}`);
-  if (!existing) return null;
-  const updated = { ...existing, ...data };
-  await client.set(`order:${id}`, updated);
-  return updated;
+  if (useKV()) {
+    const client = await kvClient();
+    const existing = await client.get<Order>(`order:${id}`);
+    if (!existing) return null;
+    const updated = { ...existing, ...data };
+    await client.set(`order:${id}`, updated);
+    return updated;
+  }
+  const orders = fsReadOrders();
+  const idx = orders.findIndex((o) => o.id === id);
+  if (idx === -1) return null;
+  orders[idx] = { ...orders[idx], ...data };
+  fsWriteOrders(orders);
+  return orders[idx];
 }
 
 export async function getOrderByStripeSession(sessionId: string): Promise<Order | null> {
-  if (!useKV()) return null;
-  const client = await kv();
-  const ids = await client.lrange<string>("orders", 0, -1);
-  if (!ids.length) return null;
-  const orders = await client.mget<Order[]>(...ids.map((id) => `order:${id}`));
-  return orders.find((o) => o?.stripeSessionId === sessionId) ?? null;
+  if (useKV()) {
+    const client = await kvClient();
+    const ids = await client.lrange<string>("orders", 0, -1);
+    if (!ids.length) return null;
+    const orders = await client.mget<Order[]>(...ids.map((id) => `order:${id}`));
+    return orders.find((o) => o?.stripeSessionId === sessionId) ?? null;
+  }
+  return fsReadOrders().find((o) => o.stripeSessionId === sessionId) ?? null;
 }
 
 export async function listOrders(limit = 100): Promise<Order[]> {
-  if (!useKV()) return [];
-  const client = await kv();
-  const ids = await client.lrange<string>("orders", 0, limit - 1);
-  if (!ids.length) return [];
-  const orders = await client.mget<Order[]>(...ids.map((id) => `order:${id}`));
-  return orders.filter((o): o is Order => !!o);
+  if (useKV()) {
+    const client = await kvClient();
+    const ids = await client.lrange<string>("orders", 0, limit - 1);
+    if (!ids.length) return [];
+    const orders = await client.mget<Order[]>(...ids.map((id) => `order:${id}`));
+    return orders.filter((o): o is Order => !!o);
+  }
+  return fsReadOrders().slice(0, limit);
 }
