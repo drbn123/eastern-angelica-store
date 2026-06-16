@@ -35,17 +35,8 @@ export default function GridView({ releases, onProductClick }: { releases: Relea
     <section className="v1">
       <div className="hero">
         <h1>
-          <i>Catalogue —</i> <b>everything we&apos;ve released.</b>
+          <i>Catalogue —</i>
         </h1>
-        <p className="blurb">
-          Independent label out of Warsaw. Vinyl, tapes, CDs, books and shirts. Every release
-          hand-numbered, wrapped in recycled paper, shipped on Mondays.
-        </p>
-        <div className="meta">
-          <span>04 / 2026</span>
-          <span>{String(releases.length).padStart(2, "0")} titles</span>
-          <span>·</span>
-        </div>
       </div>
 
       <div className="filterbar">
