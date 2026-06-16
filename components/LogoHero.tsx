@@ -29,6 +29,14 @@ export default function LogoHero() {
     canvas.style.height = `${SIZE}px`;
     ctx.scale(dpr, dpr);
 
+    // Persistent canvas for settled particles — updated incrementally, blitted in one call per frame
+    const doneCanvas = document.createElement("canvas");
+    doneCanvas.width = SIZE * dpr;
+    doneCanvas.height = SIZE * dpr;
+    const doneCtx = doneCanvas.getContext("2d")!;
+    doneCtx.scale(dpr, dpr);
+    doneCtx.fillStyle = "#f2eee3";
+
     const img = new window.Image();
     img.src = "/assets/ea-monument.png";
     img.onload = () => {
@@ -66,18 +74,15 @@ export default function LogoHero() {
         prevTime = now;
 
         ctx.clearRect(0, 0, SIZE, SIZE);
+        // One draw call for all settled particles instead of N individual arc/fill calls
+        ctx.drawImage(doneCanvas, 0, 0, SIZE, SIZE);
+
         let live = 0;
+        const dampen = Math.pow(0.74, dt);
+        ctx.fillStyle = "#f2eee3";
 
         for (const p of particles) {
-          if (p.done) {
-            ctx.globalAlpha = p.targetAlpha;
-            ctx.fillStyle = "#f2eee3";
-            ctx.shadowBlur = 0;
-            ctx.beginPath();
-            ctx.arc(p.tx, p.ty, Math.max(0.4, p.r * 0.45), 0, Math.PI * 2);
-            ctx.fill();
-            continue;
-          }
+          if (p.done) continue;
 
           if (p.delay > 0) { p.delay -= dt; live++; continue; }
 
@@ -89,34 +94,32 @@ export default function LogoHero() {
 
           if (d < 1.2 && Math.abs(p.vx) < 0.5 && Math.abs(p.vy) < 0.5) {
             p.x = p.tx; p.y = p.ty; p.done = true;
-          } else {
-            p.vx = (p.vx + dx * 0.1 * dt) * Math.pow(0.74, dt);
-            p.vy = (p.vy + dy * 0.1 * dt) * Math.pow(0.74, dt);
-            const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-            if (speed > 14) { p.vx = p.vx / speed * 14; p.vy = p.vy / speed * 14; }
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            live++;
+            // Paint settled particle onto persistent canvas — happens once per particle
+            doneCtx.globalAlpha = p.targetAlpha;
+            doneCtx.beginPath();
+            doneCtx.arc(p.tx, p.ty, Math.max(0.4, p.r * 0.45), 0, Math.PI * 2);
+            doneCtx.fill();
+            continue;
           }
+
+          p.vx = (p.vx + dx * 0.1 * dt) * dampen;
+          p.vy = (p.vy + dy * 0.1 * dt) * dampen;
+          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          if (speed > 14) { p.vx = p.vx / speed * 14; p.vy = p.vy / speed * 14; }
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          live++;
 
           p.r = Math.max(0.6, p.r - 0.02 * dt);
           const progress = Math.max(0, 1 - d / 120);
           const displayR = p.r * (1 - progress * 0.5);
 
-          if (displayR > 1.4) {
-            ctx.shadowColor = "rgba(242,238,227,0.3)";
-            ctx.shadowBlur = displayR * 1.8;
-          } else {
-            ctx.shadowBlur = 0;
-          }
           ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = "#f2eee3";
           ctx.beginPath();
           ctx.arc(p.x, p.y, Math.max(0.4, displayR), 0, Math.PI * 2);
           ctx.fill();
         }
 
-        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
         if (live > 0) {
