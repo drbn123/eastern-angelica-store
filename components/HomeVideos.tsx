@@ -50,35 +50,31 @@ export default async function HomeVideos() {
   if (!videos.length) return null;
 
   return (
-    <section className="home-videos">
-      <div className="home-videos-hd">
-        <span className="home-videos-label">Videos</span>
-        <Link href="/videos" className="home-videos-all">→ All videos</Link>
-      </div>
-      <div className="home-videos-grid">
+    <div className="v0-video-strip">
+      <span className="v0-vs-label">Videos</span>
+      <div className="v0-vs-thumbs">
         {videos.map((v) => (
-          <Link key={v.videoId} href="/videos" className="home-video-item">
-            <div className="home-video-thumb">
+          <Link key={v.videoId} href="/videos" className="v0-vs-item">
+            <div className="v0-vs-thumb">
               <Image
                 src={`https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`}
                 alt={v.title}
                 fill
-                sizes="(max-width: 768px) 100vw, 33vw"
+                sizes="80px"
                 style={{ objectFit: "cover" }}
               />
-              <div className="home-video-play">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+              <div className="v0-vs-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
               </div>
             </div>
-            <div className="home-video-meta">
-              <span className="home-video-title">{v.title}</span>
-              <span className="home-video-date">{formatDate(v.published)}</span>
+            <div className="v0-vs-info">
+              <span className="v0-vs-title">{v.title}</span>
+              <span className="v0-vs-date">{formatDate(v.published)}</span>
             </div>
           </Link>
         ))}
       </div>
-    </section>
+      <Link href="/videos" className="v0-vs-all">→ All</Link>
+    </div>
   );
 }

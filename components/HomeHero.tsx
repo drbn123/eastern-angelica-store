@@ -8,7 +8,7 @@ import type { Release } from "@/lib/types";
 import LogoHero from "@/components/LogoHero";
 import GifHover, { isGif } from "@/components/GifHover";
 
-export default function HomeHero({ releases }: { releases: Release[] }) {
+export default function HomeHero({ releases, videoStrip }: { releases: Release[]; videoStrip?: React.ReactNode }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const recent = releases.slice(0, 5);
 
@@ -61,13 +61,14 @@ export default function HomeHero({ releases }: { releases: Release[] }) {
                       {r.format} · {r.edition}
                     </span>
                   </div>
-                  <span className="v0-recent-price">{r.price} €</span>
+                  <span className="v0-recent-price">£{r.price.gbp}</span>
                 </Link>
               </li>
             ))}
           </ul>
         </aside>
 
+        {videoStrip}
         <div className="v0-newsletter v0-footerbar">
           <span className="v0-nl-right">© EA Recordings 2026</span>
           <div className="v0-links">
