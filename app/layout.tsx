@@ -3,7 +3,6 @@ import { JetBrains_Mono, Cormorant_Garamond, Space_Grotesk } from "next/font/goo
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import TopStrip from "@/components/TopStrip";
 import Header from "@/components/Header";
 import CartSidebar from "@/components/CartSidebar";
 import Toast from "@/components/Toast";
@@ -53,7 +52,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <ThemeProvider>
           <CartProvider>
-            <TopStrip />
             <Header />
             {children}
             <CartSidebar />
