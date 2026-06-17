@@ -27,19 +27,27 @@ function html(order: Order, heading: string, body: string): string {
     : "";
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family:'Courier New',Courier,monospace;background:#050505;color:#f2eee3;max-width:580px;margin:0 auto;padding:40px 24px">
-  <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.25em;border-bottom:1px solid #242320;padding-bottom:14px;margin-bottom:32px;color:#f2eee3">KUZKO</div>
-  <h1 style="font-size:13px;font-weight:normal;margin:0 0 24px;color:#f2eee3;letter-spacing:0.05em">${heading}</h1>
-  ${body}
-  ${imageBlock}
-  <table style="width:100%;border-collapse:collapse;margin:24px 0">
-    ${rows}
-    <tr><td style="padding:10px 0;border-bottom:1px solid #242320;font-size:13px;color:#7a766d">${order.shippingLabel ?? "Shipping"}</td><td></td><td style="padding:10px 0;border-bottom:1px solid #242320;text-align:right;color:#7a766d;font-size:13px">${formatPrice(order.shippingCents / 100, order.currency)}</td></tr>
-    <tr><td style="padding:12px 0;border-top:1px solid #f2eee3;font-size:14px;font-weight:bold;color:#f2eee3">Total</td><td></td><td style="padding:12px 0;border-top:1px solid #f2eee3;text-align:right;font-size:14px;font-weight:bold;color:#f2eee3">${formatPrice(order.totalCents / 100, order.currency)}</td></tr>
-  </table>
-  ${addr}
-  <a href="${BASE}/order/${order.id}" style="display:inline-block;margin:24px 0;padding:13px 32px;background:#f2eee3;color:#050505;text-decoration:none;font-size:10px;text-transform:uppercase;letter-spacing:0.2em;font-family:'Courier New',Courier,monospace">TRACK YOUR ORDER →</a>
-  <div style="margin-top:48px;padding-top:20px;border-top:1px solid #242320;font-size:10px;color:#7a766d;text-transform:uppercase;letter-spacing:0.12em">KUZKO · London · kuzko-store.com</div>
+<body style="margin:0;padding:0;background:#050505" bgcolor="#050505">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050505" bgcolor="#050505">
+  <tr><td align="center" style="padding:40px 24px;background:#050505" bgcolor="#050505">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;font-family:'Courier New',Courier,monospace;color:#f2eee3">
+      <tr><td style="font-size:10px;text-transform:uppercase;letter-spacing:0.25em;border-bottom:1px solid #242320;padding-bottom:14px;margin-bottom:0;color:#f2eee3;padding-bottom:14px">KUZKO</td></tr>
+      <tr><td style="padding-top:28px;padding-bottom:20px"><h1 style="font-size:13px;font-weight:normal;margin:0;color:#f2eee3;letter-spacing:0.05em">${heading}</h1></td></tr>
+      <tr><td>${body}</td></tr>
+      ${imageBlock ? `<tr><td style="padding-bottom:28px">${imageBlock}</td></tr>` : ""}
+      <tr><td>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 0 24px">
+          ${rows}
+          <tr><td style="padding:10px 0;border-bottom:1px solid #242320;font-size:13px;color:#7a766d">${order.shippingLabel ?? "Shipping"}</td><td></td><td style="padding:10px 0;border-bottom:1px solid #242320;text-align:right;color:#7a766d;font-size:13px">${formatPrice(order.shippingCents / 100, order.currency)}</td></tr>
+          <tr><td style="padding:12px 0;border-top:1px solid #f2eee3;font-size:14px;font-weight:bold;color:#f2eee3">Total</td><td></td><td style="padding:12px 0;border-top:1px solid #f2eee3;text-align:right;font-size:14px;font-weight:bold;color:#f2eee3">${formatPrice(order.totalCents / 100, order.currency)}</td></tr>
+        </table>
+      </td></tr>
+      ${addr ? `<tr><td>${addr}</td></tr>` : ""}
+      <tr><td style="padding:8px 0 40px"><a href="${BASE}/order/${order.id}" style="display:inline-block;padding:13px 32px;background:#f2eee3;color:#050505;text-decoration:none;font-size:10px;text-transform:uppercase;letter-spacing:0.2em;font-family:'Courier New',Courier,monospace">TRACK YOUR ORDER →</a></td></tr>
+      <tr><td style="padding-top:20px;border-top:1px solid #242320;font-size:10px;color:#7a766d;text-transform:uppercase;letter-spacing:0.12em">KUZKO · London · kuzko-store.com</td></tr>
+    </table>
+  </td></tr>
+</table>
 </body></html>`;
 }
 
