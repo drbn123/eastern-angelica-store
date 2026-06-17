@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getOrderByStripeSession, updateOrder } from "@/lib/orders";
 import { sendWhatsApp } from "@/lib/notify";
+import { sendOrderConfirmation } from "@/lib/email";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -62,7 +63,10 @@ export async function POST(req: NextRequest) {
         typeof session.payment_intent === "string" ? session.payment_intent : undefined,
       paidAt: new Date().toISOString(),
     });
-    if (updated) sendWhatsApp(updated);
+    if (updated) {
+      sendWhatsApp(updated);
+      sendOrderConfirmation(updated);
+    }
   }
 
   return NextResponse.json({ received: true });

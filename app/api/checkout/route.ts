@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       paidAt: new Date().toISOString(),
     });
     sendWhatsApp(order);
-    return NextResponse.json({ url: `${base}/store?order=success&demo=${order.number}` });
+    return NextResponse.json({ url: `${base}/order/${order.id}` });
   }
 
   const WORLDWIDE_COUNTRIES: Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[] = [
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
             },
           },
         ],
-    success_url: `${base}/store?order=success&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${base}/order/by-session?s={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/store`,
     metadata: { currency },
   });

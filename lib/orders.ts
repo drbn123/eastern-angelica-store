@@ -149,3 +149,14 @@ export async function listOrders(limit = 100): Promise<Order[]> {
   }
   return fsReadOrders().slice(0, limit);
 }
+
+export async function getOrderByNumberAndEmail(number: number, email: string): Promise<Order | null> {
+  if (useKV()) {
+    const client = await kvClient();
+    const ids = await client.lrange<string>("orders", 0, -1);
+    if (!ids.length) return null;
+    const orders = await client.mget<Order[]>(...ids.map((id) => `order:${id}`));
+    return orders.find((o) => o?.number === number && o.email.toLowerCase() === email.toLowerCase()) ?? null;
+  }
+  return fsReadOrders().find((o) => o.number === number && o.email.toLowerCase() === email.toLowerCase()) ?? null;
+}

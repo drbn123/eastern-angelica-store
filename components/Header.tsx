@@ -35,6 +35,7 @@ export default function Header() {
         >
           {currency === "gbp" ? "£ GBP" : "zł PLN"}
         </button>
+        <Link href="/track" className="track-btn">Track</Link>
         <button className={`cart-btn${bump ? " bump" : ""}`} onClick={openCart}>
           Cart <span className="count">{String(cartCount).padStart(2, "0")}</span>
         </button>

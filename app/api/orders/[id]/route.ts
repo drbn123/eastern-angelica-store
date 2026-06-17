@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
 import { getOrder, updateOrder, type OrderStatus } from "@/lib/orders";
+import { sendShippingUpdate } from "@/lib/email";
 
 const VALID_STATUSES: OrderStatus[] = ["pending", "paid", "fulfilled", "shipped", "cancelled", "refunded"];
 
@@ -30,5 +31,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     ...(body.note !== undefined ? { note: body.note } : {}),
   });
   if (!updated) return Response.json({ error: "Not found" }, { status: 404 });
+  if (body.status === "shipped" || body.status === "fulfilled") {
+    sendShippingUpdate(updated);
+  }
   return Response.json(updated);
 }
