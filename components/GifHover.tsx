@@ -13,24 +13,21 @@ const FILL: React.CSSProperties = {
   display: "block",
 };
 
-/**
- * Shows a GIF's first frame as a static poster (drawn to a canvas) while idle,
- * and the live, looping animation only while hovered.
- *
- * To guarantee the animation always restarts from frame 0 (browsers otherwise
- * share a single animation timeline per GIF URL and resume mid-loop), the GIF
- * is fetched once into an in-memory Blob and a fresh object URL is minted on
- * each hover — a new URL is a new resource identity, so it decodes from the
- * start. No re-download, so it stays smooth.
- */
-export default function GifHover({ src, alt }: { src: string; alt: string }) {
+export default function GifHover({ src, alt, autoplay = false }: { src: string; alt: string; autoplay?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const blobRef = useRef<Blob | null>(null);
   const urlRef = useRef<string | null>(null);
   const [playSrc, setPlaySrc] = useState<string | null>(null);
+  // true on touch/stylus devices where hover doesn't work reliably
+  const [noHover, setNoHover] = useState(false);
+
+  useEffect(() => {
+    setNoHover(window.matchMedia("(hover: none)").matches);
+  }, []);
 
   // Draw the first frame onto a canvas as the static idle poster.
   useEffect(() => {
+    if (autoplay || noHover) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const img = new Image();
@@ -40,21 +37,21 @@ export default function GifHover({ src, alt }: { src: string; alt: string }) {
       canvas.getContext("2d")?.drawImage(img, 0, 0);
     };
     img.src = src;
-  }, [src]);
+  }, [src, autoplay, noHover]);
 
-  // Prefetch the GIF bytes once so hovering can replay from a fresh object URL
-  // without hitting the network again.
+  // Prefetch the GIF bytes once so hovering can replay from a fresh object URL.
   useEffect(() => {
+    if (autoplay || noHover) return;
     let cancelled = false;
     fetch(src)
       .then((r) => r.blob())
       .then((b) => { if (!cancelled) blobRef.current = b; })
-      .catch(() => { /* cross-origin/offline: fall back to raw src on hover */ });
+      .catch(() => {});
     return () => {
       cancelled = true;
       if (urlRef.current) { URL.revokeObjectURL(urlRef.current); urlRef.current = null; }
     };
-  }, [src]);
+  }, [src, autoplay, noHover]);
 
   const play = () => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -62,7 +59,7 @@ export default function GifHover({ src, alt }: { src: string; alt: string }) {
       urlRef.current = URL.createObjectURL(blobRef.current);
       setPlaySrc(urlRef.current);
     } else {
-      setPlaySrc(src); // blob not ready yet — degrade gracefully
+      setPlaySrc(src);
     }
   };
 
@@ -70,6 +67,11 @@ export default function GifHover({ src, alt }: { src: string; alt: string }) {
     setPlaySrc(null);
     if (urlRef.current) { URL.revokeObjectURL(urlRef.current); urlRef.current = null; }
   };
+
+  // Always-on: just render the img directly (loops natively, no hover logic needed)
+  if (autoplay || noHover) {
+    return <img src={src} alt={alt} style={FILL} draggable={false} />;
+  }
 
   return (
     <div style={{ position: "absolute", inset: 0 }} onMouseEnter={play} onMouseLeave={stop}>

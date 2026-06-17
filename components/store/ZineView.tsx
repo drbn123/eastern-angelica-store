@@ -60,7 +60,7 @@ export default function ZineView({ releases, initialIdx = 0 }: { releases: Relea
 
       <div className="zine">
         <div className="art" data-idx={`№ ${r.cat}`} data-cat={catName}>
-          <Cover idx={idx} release={r} />
+          <Cover idx={idx} release={r} autoplay />
         </div>
         <div className="meta">
           <div className="cat">release · {r.year}</div>

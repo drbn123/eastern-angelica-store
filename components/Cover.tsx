@@ -9,16 +9,17 @@ interface Props {
   idx: number;
   release?: Release;
   className?: string;
+  autoplay?: boolean;
 }
 
-export default function Cover({ idx, release, className = "" }: Props) {
+export default function Cover({ idx, release, className = "", autoplay = false }: Props) {
   const photo = release?.cover;
 
   if (photo) {
     return (
       <div className={`cover cover-photo ${className}`}>
         {isGif(photo) ? (
-          <GifHover src={photo} alt={release?.title ?? ""} />
+          <GifHover src={photo} alt={release?.title ?? ""} autoplay={autoplay} />
         ) : (
           <Image src={photo} alt={release?.title ?? ""} fill style={{ objectFit: "cover" }} />
         )}
