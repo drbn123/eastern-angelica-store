@@ -1358,8 +1358,8 @@ header.main {
   /* Cart */
   .cart { width: 100vw; }
 
-  /* Videos grid: stay 2-col on mobile (thumbnails are small enough) */
-  .videos-grid { grid-template-columns: 1fr 1fr; }
+  /* Videos grid: single column on mobile */
+  .videos-grid { grid-template-columns: 1fr; }
 
   /* Home releases list */
   .v0-side { padding: 16px; }
