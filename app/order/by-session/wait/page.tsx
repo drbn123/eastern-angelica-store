@@ -1,8 +1,8 @@
 "use client";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function WaitPage() {
+function WaitInner() {
   const params = useSearchParams();
   const router = useRouter();
   const s = params.get("s");
@@ -20,9 +20,15 @@ export default function WaitPage() {
     return () => clearInterval(poll);
   }, [s, router]);
 
+  return <p>Processing your order…</p>;
+}
+
+export default function WaitPage() {
   return (
     <main className="order-wait">
-      <p>Processing your order…</p>
+      <Suspense fallback={<p>Processing your order…</p>}>
+        <WaitInner />
+      </Suspense>
     </main>
   );
 }
