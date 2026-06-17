@@ -9,19 +9,6 @@ function getStripe(): Stripe {
   return new Stripe(key, { apiVersion: "2026-05-27.dahlia" });
 }
 
-type StripeSession = Stripe.Checkout.Session & {
-  shipping_details?: {
-    name?: string | null;
-    address?: {
-      line1?: string | null;
-      line2?: string | null;
-      city?: string | null;
-      postal_code?: string | null;
-      country?: string | null;
-    } | null;
-  } | null;
-};
-
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
@@ -38,18 +25,20 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const raw = event.data.object as StripeSession;
-    const session = await getStripe().checkout.sessions.retrieve(raw.id) as StripeSession;
+    const raw = event.data.object as Stripe.Checkout.Session;
+    const session = await getStripe().checkout.sessions.retrieve(raw.id);
     const order = await getOrderByStripeSession(session.id);
     if (!order) return NextResponse.json({ received: true });
 
-    const addr = session.shipping_details?.address;
+    // Stripe API 2026-05-27: shipping address is in collected_information.shipping_details
+    const shipping = session.collected_information?.shipping_details;
+    const addr = shipping?.address;
     const updated = await updateOrder(order.id, {
       status: "paid",
       email: session.customer_details?.email ?? "",
       address: addr
         ? {
-            name: session.shipping_details?.name ?? session.customer_details?.name ?? "",
+            name: shipping?.name ?? session.customer_details?.name ?? "",
             line1: addr.line1 ?? "",
             line2: addr.line2 ?? undefined,
             city: addr.city ?? "",
