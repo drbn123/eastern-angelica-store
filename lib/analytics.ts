@@ -39,24 +39,12 @@ export interface LiveCart {
 
 export interface AnalyticsData {
   dailyViews: { date: string; count: number }[];
-  totalViews30: number;
-  totalViews7: number;
+  totalViews: number;
   topCountries: { country: string; count: number }[];
   topPaths: { path: string; count: number }[];
   topReferrers: { source: string; count: number }[];
   cartAdds: number;
   cartCheckoutStarts: number;
-  cartAdds7: number;
-  cartCheckoutStarts7: number;
-  // Live — derived from orders passed in
-  totalOrders: number;
-  paidOrders: number;
-  fulfilledOrders: number;
-  shippedOrders: number;
-  cancelledOrders: number;
-  revenueGBP: number;
-  revenuePLN: number;
-  topProducts: { title: string; qty: number }[];
 }
 
 // ── Write helpers ──────────────────────────────────────────────────────────
@@ -117,7 +105,6 @@ export async function getActiveCarts(): Promise<LiveCart[]> {
   const client = await kv();
   const cutoff = Date.now() - 10 * 60 * 1000;
 
-  // Prune stale entries from the sorted set
   await client.zremrangebyscore("live:carts", 0, cutoff);
 
   const sessionIds = await client.zrange<string[]>("live:carts", 0, -1, { rev: true });
@@ -137,88 +124,96 @@ export async function getActiveCarts(): Promise<LiveCart[]> {
   return carts;
 }
 
-export async function getAnalytics(): Promise<Omit<AnalyticsData, "totalOrders" | "paidOrders" | "fulfilledOrders" | "shippedOrders" | "cancelledOrders" | "revenueGBP" | "revenuePLN" | "topProducts">> {
-  if (!useKV()) return emptyAnalytics();
+/**
+ * Compute analytics for a given time range by scanning raw event lists.
+ * fromTs=0 means "all time" (entire event list, capped at 5000 views / 10000 cart events).
+ */
+export async function getAnalytics(fromTs: number, toTs: number): Promise<AnalyticsData> {
+  if (!useKV()) return emptyAnalytics(fromTs, toTs);
 
   const client = await kv();
-  const now = Date.now();
-  const cutoff30 = now - 30 * 24 * 60 * 60 * 1000;
-  const cutoff7  = now -  7 * 24 * 60 * 60 * 1000;
 
-  // Daily view counts (last 14 days)
-  const dailyViews: { date: string; count: number }[] = [];
-  const dateKeys: string[] = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(now - i * 24 * 60 * 60 * 1000);
-    dateKeys.push(d.toISOString().slice(0, 10));
-  }
-  const dailyCounts = await Promise.all(
-    dateKeys.map((k) => client.get<number>(`analytics:day:${k}`))
-  );
-  for (let i = 0; i < dateKeys.length; i++) {
-    dailyViews.push({ date: dateKeys[i], count: (dailyCounts[i] as number) || 0 });
-  }
-
-  // Views totals from raw event list
+  // ── Scan raw page views ──
   const rawViews = await client.lrange<string>("analytics:views", 0, 4999);
-  let totalViews30 = 0;
-  let totalViews7 = 0;
+  let totalViews = 0;
+  const dailyCounts: Record<string, number> = {};
+  const countries: Record<string, number> = {};
+  const paths: Record<string, number> = {};
+  const referrers: Record<string, number> = {};
+  let earliest = toTs;
+
   for (const raw of rawViews) {
     try {
-      const ev = typeof raw === "string" ? JSON.parse(raw) as PageViewEvent : raw as unknown as PageViewEvent;
-      if (ev.ts >= cutoff30) totalViews30++;
-      if (ev.ts >= cutoff7)  totalViews7++;
+      const ev = (typeof raw === "string" ? JSON.parse(raw) : raw) as PageViewEvent;
+      if (ev.ts >= fromTs && ev.ts <= toTs) {
+        totalViews++;
+        const date = new Date(ev.ts).toISOString().slice(0, 10);
+        dailyCounts[date] = (dailyCounts[date] ?? 0) + 1;
+        if (ev.country) countries[ev.country] = (countries[ev.country] ?? 0) + 1;
+        const p = (ev.path || "/").slice(0, 80);
+        paths[p] = (paths[p] ?? 0) + 1;
+        if (ev.referrer) {
+          try {
+            const host = new URL(ev.referrer).hostname.replace(/^www\./, "");
+            if (host) referrers[host] = (referrers[host] ?? 0) + 1;
+          } catch { /* skip */ }
+        } else {
+          referrers["(direct)"] = (referrers["(direct)"] ?? 0) + 1;
+        }
+        if (ev.ts < earliest) earliest = ev.ts;
+      }
     } catch { /* skip */ }
   }
 
-  // Top countries
-  const countriesRaw = await client.zrange<string[]>("analytics:countries", 0, 9, { rev: true, withScores: true });
-  const topCountries: { country: string; count: number }[] = [];
-  for (let i = 0; i < countriesRaw.length; i += 2) {
-    topCountries.push({ country: String(countriesRaw[i]), count: Number(countriesRaw[i + 1]) });
+  // ── Build daily views array spanning the requested range ──
+  const dayMs = 24 * 60 * 60 * 1000;
+  const startDay = fromTs === 0
+    ? new Date(earliest).toISOString().slice(0, 10)
+    : new Date(fromTs).toISOString().slice(0, 10);
+  const endDay = new Date(toTs).toISOString().slice(0, 10);
+  const dailyViews: { date: string; count: number }[] = [];
+  for (
+    let d = new Date(startDay + "T00:00:00Z").getTime();
+    d <= new Date(endDay + "T00:00:00Z").getTime();
+    d += dayMs
+  ) {
+    const key = new Date(d).toISOString().slice(0, 10);
+    dailyViews.push({ date: key, count: dailyCounts[key] ?? 0 });
   }
 
-  // Top paths
-  const pathsRaw = await client.zrange<string[]>("analytics:paths", 0, 9, { rev: true, withScores: true });
-  const topPaths: { path: string; count: number }[] = [];
-  for (let i = 0; i < pathsRaw.length; i += 2) {
-    topPaths.push({ path: String(pathsRaw[i]), count: Number(pathsRaw[i + 1]) });
-  }
-
-  // Cart events — both 7d and 30d
+  // ── Scan cart events ──
   const rawCart = await client.lrange<string>("analytics:cart", 0, 9999);
   let cartAdds = 0, cartCheckoutStarts = 0;
-  let cartAdds7 = 0, cartCheckoutStarts7 = 0;
   for (const raw of rawCart) {
     try {
-      const ev = typeof raw === "string" ? JSON.parse(raw) as CartEvent : raw as unknown as CartEvent;
-      if (ev.ts >= cutoff30) {
+      const ev = (typeof raw === "string" ? JSON.parse(raw) : raw) as CartEvent;
+      if (ev.ts >= fromTs && ev.ts <= toTs) {
         if (ev.type === "add") cartAdds++;
         if (ev.type === "checkout_start") cartCheckoutStarts++;
       }
-      if (ev.ts >= cutoff7) {
-        if (ev.type === "add") cartAdds7++;
-        if (ev.type === "checkout_start") cartCheckoutStarts7++;
-      }
     } catch { /* skip */ }
   }
 
-  // Top referrers
-  const referrersRaw = await client.zrange<string[]>("analytics:referrers", 0, 9, { rev: true, withScores: true });
-  const topReferrers: { source: string; count: number }[] = [];
-  for (let i = 0; i < referrersRaw.length; i += 2) {
-    topReferrers.push({ source: String(referrersRaw[i]), count: Number(referrersRaw[i + 1]) });
-  }
+  // ── Aggregates ──
+  const topCountries = Object.entries(countries)
+    .sort(([, a], [, b]) => b - a).slice(0, 10)
+    .map(([country, count]) => ({ country, count }));
+  const topPaths = Object.entries(paths)
+    .sort(([, a], [, b]) => b - a).slice(0, 10)
+    .map(([path, count]) => ({ path, count }));
+  const topReferrers = Object.entries(referrers)
+    .sort(([, a], [, b]) => b - a).slice(0, 10)
+    .map(([source, count]) => ({ source, count }));
 
-  return { dailyViews, totalViews30, totalViews7, topCountries, topPaths, topReferrers, cartAdds, cartCheckoutStarts, cartAdds7, cartCheckoutStarts7 };
+  return { dailyViews, totalViews, topCountries, topPaths, topReferrers, cartAdds, cartCheckoutStarts };
 }
 
-function emptyAnalytics() {
+function emptyAnalytics(fromTs: number, toTs: number): AnalyticsData {
   const dailyViews: { date: string; count: number }[] = [];
-  const now = Date.now();
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(now - i * 24 * 60 * 60 * 1000);
-    dailyViews.push({ date: d.toISOString().slice(0, 10), count: 0 });
+  const dayMs = 24 * 60 * 60 * 1000;
+  const start = fromTs === 0 ? toTs - 6 * dayMs : fromTs;
+  for (let d = start; d <= toTs; d += dayMs) {
+    dailyViews.push({ date: new Date(d).toISOString().slice(0, 10), count: 0 });
   }
-  return { dailyViews, totalViews30: 0, totalViews7: 0, topCountries: [], topPaths: [], topReferrers: [], cartAdds: 0, cartCheckoutStarts: 0, cartAdds7: 0, cartCheckoutStarts7: 0 };
+  return { dailyViews, totalViews: 0, topCountries: [], topPaths: [], topReferrers: [], cartAdds: 0, cartCheckoutStarts: 0 };
 }

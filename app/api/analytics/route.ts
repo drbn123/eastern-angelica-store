@@ -55,6 +55,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ carts });
   }
 
-  const data = await getAnalytics();
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const now = Date.now();
+  const fromTs = fromParam ? parseInt(fromParam, 10) : now - 7 * 24 * 60 * 60 * 1000;
+  const toTs = toParam ? parseInt(toParam, 10) : now;
+
+  const data = await getAnalytics(fromTs, toTs);
   return NextResponse.json(data);
 }

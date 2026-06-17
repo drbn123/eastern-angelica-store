@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Order } from "@/lib/orders";
-import type { LiveCart } from "@/lib/analytics";
+import type { LiveCart, AnalyticsData } from "@/lib/analytics";
 import { formatPrice } from "@/lib/money";
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -18,23 +18,6 @@ const COUNTRY_NAMES: Record<string, string> = {
   JP: "Japan 🇯🇵", KR: "South Korea 🇰🇷", CN: "China 🇨🇳",
 };
 
-function countryName(code: string) {
-  return COUNTRY_NAMES[code] ?? code;
-}
-
-interface AnalyticsPayload {
-  dailyViews: { date: string; count: number }[];
-  totalViews30: number;
-  totalViews7: number;
-  topCountries: { country: string; count: number }[];
-  topPaths: { path: string; count: number }[];
-  topReferrers: { source: string; count: number }[];
-  cartAdds: number;
-  cartCheckoutStarts: number;
-  cartAdds7: number;
-  cartCheckoutStarts7: number;
-}
-
 // ── SVG Line Chart ────────────────────────────────────────────────────────────
 
 function LineChart({ data }: { data: { date: string; count: number }[] }) {
@@ -42,6 +25,7 @@ function LineChart({ data }: { data: { date: string; count: number }[] }) {
   const PAD = { top: 12, right: 16, bottom: 32, left: 32 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
+  if (data.length < 2) return <p className="an-empty-note">Not enough data to chart.</p>;
   const maxVal = Math.max(...data.map((d) => d.count), 1);
   const pts = data.map((d, i) => ({
     x: PAD.left + (i / (data.length - 1)) * chartW,
@@ -55,7 +39,8 @@ function LineChart({ data }: { data: { date: string; count: number }[] }) {
     `L ${pts[pts.length - 1].x},${PAD.top + chartH}`, "Z",
   ].join(" ");
   const yLabels = [0, Math.round(maxVal / 2), maxVal];
-  const xLabels = pts.filter((_, i) => i % 4 === 0 || i === pts.length - 1);
+  const labelInterval = Math.max(1, Math.floor(pts.length / 8));
+  const xLabels = pts.filter((_, i) => i % labelInterval === 0 || i === pts.length - 1);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="an-linechart" preserveAspectRatio="xMidYMid meet">
       <defs>
@@ -76,9 +61,11 @@ function LineChart({ data }: { data: { date: string; count: number }[] }) {
       <path d={areaPath} fill="url(#an-area-grad)" />
       <polyline points={polyline} fill="none" stroke="var(--fg)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--bg)" stroke="var(--fg)" strokeWidth="1.5">
-          <title>{p.date}: {p.count} views</title>
-        </circle>
+        data.length <= 31 ? (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--bg)" stroke="var(--fg)" strokeWidth="1.5">
+            <title>{p.date}: {p.count} views</title>
+          </circle>
+        ) : null
       ))}
       {xLabels.map((p, i) => (
         <text key={i} x={p.x} y={H - 4} textAnchor="middle" fill="var(--fg-dim)" fontSize="9" fontFamily="var(--mono)">{p.date.slice(5)}</text>
@@ -115,6 +102,17 @@ function KpiCard({ label, value, sub }: { label: string; value: string | number;
       <span className="an-kpi-label">{label}</span>
       <span className="an-kpi-value">{value}</span>
       {sub && <span className="an-kpi-sub">{sub}</span>}
+    </div>
+  );
+}
+
+function RevenueKpiCard({ gbp, pln }: { gbp: number; pln: number }) {
+  return (
+    <div className="an-kpi">
+      <span className="an-kpi-label">Revenue</span>
+      <span className="an-kpi-value an-kpi-value-sm">{formatPrice(gbp / 100, "gbp")}</span>
+      {pln > 0 && <span className="an-kpi-value an-kpi-value-sm">{formatPrice(pln / 100, "pln")}</span>}
+      <span className="an-kpi-sub">paid + shipped</span>
     </div>
   );
 }
@@ -218,7 +216,7 @@ function LiveCarts() {
   );
 }
 
-// ── Order stats ───────────────────────────────────────────────────────────────
+// ── Order stats (client-side, filtered by date range) ─────────────────────────
 
 function deriveOrderStats(orders: Order[]) {
   let revenueGBP = 0, revenuePLN = 0;
@@ -232,10 +230,6 @@ function deriveOrderStats(orders: Order[]) {
       }
     }
   }
-  const topProducts = Object.entries(productCounts)
-    .map(([title, qty]) => ({ title, qty }))
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5);
   return {
     totalOrders: orders.length,
     paidOrders: orders.filter((o) => o.status === "paid").length,
@@ -243,41 +237,85 @@ function deriveOrderStats(orders: Order[]) {
     shippedOrders: orders.filter((o) => o.status === "shipped").length,
     cancelledOrders: orders.filter((o) => o.status === "cancelled").length,
     pendingOrders: orders.filter((o) => o.status === "pending").length,
-    revenueGBP, revenuePLN, topProducts,
+    revenueGBP, revenuePLN,
+    topProducts: Object.entries(productCounts)
+      .map(([title, qty]) => ({ title, qty }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5),
   };
+}
+
+// ── Range helpers ─────────────────────────────────────────────────────────────
+
+type RangeMode = "7" | "30" | "all" | "custom";
+
+function toDateInput(ts: number) {
+  return new Date(ts).toISOString().slice(0, 10);
+}
+
+function rangeLabel(mode: RangeMode, from: string, to: string): string {
+  if (mode === "7") return "last 7 days";
+  if (mode === "30") return "last 30 days";
+  if (mode === "all") return "all time";
+  if (from && to) return `${from} → ${to}`;
+  return "custom";
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-type Range = 7 | 30;
-
 export default function AdminAnalytics({ orders }: { orders: Order[] }) {
-  const [data, setData] = useState<AnalyticsPayload | null>(null);
+  const now = Date.now();
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [range, setRange] = useState<Range>(7);
+  const [rangeMode, setRangeMode] = useState<RangeMode>("7");
+  const [customFrom, setCustomFrom] = useState(toDateInput(now - 30 * 86400000));
+  const [customTo, setCustomTo] = useState(toDateInput(now));
+
+  function getFromTo(): { from: number; to: number } {
+    const n = Date.now();
+    if (rangeMode === "7") return { from: n - 7 * 86400000, to: n };
+    if (rangeMode === "30") return { from: n - 30 * 86400000, to: n };
+    if (rangeMode === "all") return { from: 0, to: n };
+    return {
+      from: new Date(customFrom + "T00:00:00Z").getTime(),
+      to: new Date(customTo + "T23:59:59Z").getTime(),
+    };
+  }
 
   function fetchData(isRefresh = false) {
+    if (rangeMode === "custom" && (!customFrom || !customTo)) return;
     if (isRefresh) setRefreshing(true); else setLoading(true);
-    fetch("/api/analytics")
+    const { from, to } = getFromTo();
+    fetch(`/api/analytics?from=${from}&to=${to}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); setRefreshing(false); })
       .catch(() => { setLoading(false); setRefreshing(false); });
   }
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [rangeMode]);
 
-  const orderStats = deriveOrderStats(orders);
+  useEffect(() => {
+    if (rangeMode === "custom" && customFrom && customTo && customFrom <= customTo) {
+      fetchData();
+    }
+  }, [customFrom, customTo]);
 
-  const totalViews = range === 7 ? (data?.totalViews7 ?? 0) : (data?.totalViews30 ?? 0);
-  const cartAdds = range === 7 ? (data?.cartAdds7 ?? 0) : (data?.cartAdds ?? 0);
-  const checkoutStarts = range === 7 ? (data?.cartCheckoutStarts7 ?? 0) : (data?.cartCheckoutStarts ?? 0);
+  const filteredOrders = useMemo(() => {
+    if (rangeMode === "all") return orders;
+    const { from, to } = getFromTo();
+    return orders.filter((o) => {
+      const t = new Date(o.createdAt).getTime();
+      return t >= from && t <= to;
+    });
+  }, [orders, rangeMode, customFrom, customTo]);
+
+  const orderStats = deriveOrderStats(filteredOrders);
+  const totalViews = data?.totalViews ?? 0;
+  const cartAdds = data?.cartAdds ?? 0;
+  const checkoutStarts = data?.cartCheckoutStarts ?? 0;
   const convRate = totalViews > 0 ? ((orderStats.paidOrders / totalViews) * 100).toFixed(2) : "0.00";
-
-  // Chart data: for 7d range, show last 7 days; for 30d show all 14 we have
-  const chartData = range === 7
-    ? (data?.dailyViews ?? []).slice(-7)
-    : (data?.dailyViews ?? []);
+  const label = rangeLabel(rangeMode, customFrom, customTo);
 
   return (
     <div className="an-wrap">
@@ -297,28 +335,65 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
             </svg>
           </button>
           <div className="an-range-tabs">
-            <button className={`an-range-tab${range === 7  ? " on" : ""}`} onClick={() => setRange(7)}>7 days</button>
-            <button className={`an-range-tab${range === 30 ? " on" : ""}`} onClick={() => setRange(30)}>30 days</button>
+            {(["7", "30", "all", "custom"] as RangeMode[]).map((m) => (
+              <button
+                key={m}
+                className={`an-range-tab${rangeMode === m ? " on" : ""}`}
+                onClick={() => setRangeMode(m)}
+              >
+                {m === "7" ? "7 days" : m === "30" ? "30 days" : m === "all" ? "All time" : "Custom"}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ── KPI Row ── */}
+      {/* ── Custom date pickers ── */}
+      {rangeMode === "custom" && (
+        <div className="an-custom-range">
+          <label className="an-date-label">
+            From
+            <input
+              type="date"
+              className="an-date-input"
+              value={customFrom}
+              max={customTo}
+              onChange={(e) => setCustomFrom(e.target.value)}
+            />
+          </label>
+          <span className="an-date-sep">→</span>
+          <label className="an-date-label">
+            To
+            <input
+              type="date"
+              className="an-date-input"
+              value={customTo}
+              min={customFrom}
+              max={toDateInput(Date.now())}
+              onChange={(e) => setCustomTo(e.target.value)}
+            />
+          </label>
+        </div>
+      )}
+
+      {/* ── KPI Row (6 cards → clean 3×2 grid) ── */}
       <div className="an-kpi-row">
-        <KpiCard label="Page views" value={loading ? "—" : totalViews.toLocaleString()} sub={`last ${range} days`} />
-        <KpiCard label="Cart adds" value={loading ? "—" : cartAdds.toLocaleString()} sub={`last ${range} days`} />
-        <KpiCard label="Checkout starts" value={loading ? "—" : checkoutStarts.toLocaleString()} sub={`last ${range} days`} />
+        <KpiCard label="Page views" value={loading ? "—" : totalViews.toLocaleString()} sub={label} />
+        <KpiCard label="Cart adds" value={loading ? "—" : cartAdds.toLocaleString()} sub={label} />
+        <KpiCard label="Checkout starts" value={loading ? "—" : checkoutStarts.toLocaleString()} sub={label} />
         <KpiCard label="Orders" value={orderStats.totalOrders.toLocaleString()} sub={`${orderStats.paidOrders} paid`} />
         <KpiCard label="Conversion" value={`${convRate}%`} sub="orders / views" />
-        <KpiCard label="Revenue GBP" value={formatPrice(orderStats.revenueGBP / 100, "gbp")} sub="paid + shipped" />
-        <KpiCard label="Revenue PLN" value={formatPrice(orderStats.revenuePLN / 100, "pln")} sub="paid + shipped" />
+        <RevenueKpiCard gbp={orderStats.revenueGBP} pln={orderStats.revenuePLN} />
       </div>
 
       {/* ── Line Chart ── */}
       <div className="an-section">
-        <p className="an-section-title">Daily visits — last {range === 7 ? "7" : "14"} days</p>
+        <p className="an-section-title">
+          Daily visits — {label}
+          {data && ` (${data.dailyViews.length} days)`}
+        </p>
         <div className="an-linechart-wrap">
-          {loading ? <div className="an-loading">Loading…</div> : <LineChart data={chartData} />}
+          {loading ? <div className="an-loading">Loading…</div> : <LineChart data={data?.dailyViews ?? []} />}
         </div>
       </div>
 
@@ -326,7 +401,7 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
       <div className="an-two-col">
         {loading ? <div className="an-loading">Loading…</div> : (
           <>
-            <BarChart label="Top countries" items={(data?.topCountries ?? []).map((c) => ({ label: countryName(c.country) || c.country || "Unknown", count: c.count }))} />
+            <BarChart label="Top countries" items={(data?.topCountries ?? []).map((c) => ({ label: COUNTRY_NAMES[c.country] ?? c.country, count: c.count }))} />
             <BarChart label="Top pages" items={(data?.topPaths ?? []).map((p) => ({ label: p.path, count: p.count }))} />
           </>
         )}
@@ -342,7 +417,7 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
 
       {/* ── Checkout funnel ── */}
       <div className="an-section">
-        <p className="an-section-title">Checkout funnel — last {range} days</p>
+        <p className="an-section-title">Checkout funnel — {label}</p>
         <div className="an-funnel">
           <div className="an-funnel-step">
             <span className="an-funnel-num">{loading ? "—" : cartAdds}</span>
@@ -376,7 +451,7 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
 
       {/* ── Order status breakdown ── */}
       <div className="an-section">
-        <p className="an-section-title">Order status breakdown</p>
+        <p className="an-section-title">Order status breakdown — {label}</p>
         <div className="an-status-list">
           <StatusBar label="Paid"      count={orderStats.paidOrders}      total={orderStats.totalOrders} cls="paid" />
           <StatusBar label="Fulfilled" count={orderStats.fulfilledOrders} total={orderStats.totalOrders} cls="fulfilled" />
@@ -389,7 +464,7 @@ export default function AdminAnalytics({ orders }: { orders: Order[] }) {
       {/* ── Top products ── */}
       {orderStats.topProducts.length > 0 && (
         <div className="an-section">
-          <p className="an-section-title">Best selling products</p>
+          <p className="an-section-title">Best selling products — {label}</p>
           <div className="an-top-products">
             {orderStats.topProducts.map((p, i) => (
               <div key={i} className="an-product-row">
