@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as StripeSession;
+    const raw = event.data.object as StripeSession;
+    const session = await getStripe().checkout.sessions.retrieve(raw.id) as StripeSession;
     const order = await getOrderByStripeSession(session.id);
     if (!order) return NextResponse.json({ received: true });
 
