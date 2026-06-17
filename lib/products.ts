@@ -29,18 +29,33 @@ function fsWriteProducts(products: Release[]): void {
   fs.writeFileSync(path.join(process.cwd(), "data", "products.json"), JSON.stringify(products, null, 2));
 }
 
-// Handles old format {p: number} → {gbp: number, pln: 0} transparently
+// Approximate GBP→PLN rate used as fallback when pln price is missing/zero.
+const PLN_RATE = 5.0;
+
+// Handles old format {p: number} → {gbp, pln} transparently.
+// When pln is 0/missing, falls back to gbp * PLN_RATE so the store
+// never shows "0 zł" for products that were created before PLN support.
 function normalizeProduct(raw: unknown): Release {
   const r = raw as Record<string, unknown>;
-  const price = typeof r.price === "number"
+  const rawPrice = typeof r.price === "number"
     ? { gbp: r.price as number, pln: 0 }
     : (r.price as { gbp: number; pln: number }) ?? { gbp: 0, pln: 0 };
+  const price = {
+    gbp: rawPrice.gbp,
+    pln: rawPrice.pln || Math.round(rawPrice.gbp * PLN_RATE),
+  };
 
   const variants: Variant[] = ((r.variants ?? []) as Record<string, unknown>[]).map((v) => {
+    let gbp: number, pln: number, k: string;
     if (typeof (v as { p?: number }).p === "number") {
-      return { k: v.k as string, gbp: (v as { p: number }).p, pln: 0 };
+      gbp = (v as { p: number }).p;
+      pln = 0;
+      k = v.k as string;
+    } else {
+      const vt = v as unknown as Variant;
+      gbp = vt.gbp; pln = vt.pln; k = vt.k;
     }
-    return v as unknown as Variant;
+    return { k, gbp, pln: pln || Math.round(gbp * PLN_RATE) };
   });
 
   return { ...(r as unknown as Release), price, variants };

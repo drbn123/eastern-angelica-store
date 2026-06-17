@@ -8,12 +8,12 @@ import { formatPrice, variantPrice, toCents } from "@/lib/money";
 type Region = "uk" | "international";
 
 const SHIP: Record<Region, { gbp: number; pln: number; label: string }> = {
-  uk:            { gbp: 545,  pln: 545,  label: "UK — Royal Mail Small Parcel" },
+  uk:            { gbp: 545,  pln: 2700, label: "UK — Royal Mail Small Parcel" },
   international: { gbp: 980,  pln: 4900, label: "International Tracked — Royal Mail" },
 };
 
 export default function CartSidebar() {
-  const { cart, cartOpen, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
+  const { cart, cartOpen, openCart, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
   const [region, setRegion] = useState<Region | null>(null);
   const [pickingRegion, setPickingRegion] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -51,8 +51,17 @@ export default function CartSidebar() {
     }
   };
 
+  const totalQty = cart.reduce((s, c) => s + c.qty, 0);
+
   return (
     <>
+      {totalQty > 0 && !cartOpen && (
+        <button className="cart-fab" onClick={openCart}>
+          <span>Cart</span>
+          <span className="cart-fab-count">{totalQty}</span>
+          <span className="cart-fab-price">{formatPrice(subtotalCents / 100, currency)}</span>
+        </button>
+      )}
       <div className={`cart-scrim${cartOpen ? " on" : ""}`} onClick={closeCart} />
       <aside className={`cart${cartOpen ? " on" : ""}`} aria-hidden={!cartOpen}>
         <div className="hd">
