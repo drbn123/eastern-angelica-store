@@ -107,11 +107,17 @@ function KpiCard({ label, value, sub }: { label: string; value: string | number;
 }
 
 function RevenueKpiCard({ gbp, pln }: { gbp: number; pln: number }) {
+  const [cur, setCur] = useState<"gbp" | "pln">("gbp");
   return (
     <div className="an-kpi">
-      <span className="an-kpi-label">Revenue</span>
-      <span className="an-kpi-value an-kpi-value-sm">{formatPrice(gbp / 100, "gbp")}</span>
-      {pln > 0 && <span className="an-kpi-value an-kpi-value-sm">{formatPrice(pln / 100, "pln")}</span>}
+      <div className="an-kpi-header">
+        <span className="an-kpi-label">Revenue</span>
+        <div className="an-rev-tabs">
+          <button className={`an-rev-tab${cur === "gbp" ? " on" : ""}`} onClick={() => setCur("gbp")}>GBP</button>
+          <button className={`an-rev-tab${cur === "pln" ? " on" : ""}`} onClick={() => setCur("pln")}>PLN</button>
+        </div>
+      </div>
+      <span className="an-kpi-value">{formatPrice((cur === "gbp" ? gbp : pln) / 100, cur)}</span>
       <span className="an-kpi-sub">paid + shipped</span>
     </div>
   );
