@@ -1289,15 +1289,18 @@ header.main {
 
 /* ── Mobile (≤600px) ─────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  /* Header: collapse to compact 2-row, hide empty spacer div */
+  /* Header: collapse to 2-row, hide empty spacer div */
   header.main {
     display: flex; flex-direction: column; align-items: center;
-    gap: 8px; padding: 10px 16px; text-align: center;
+    gap: 14px; padding: 16px 20px; text-align: center;
   }
   header.main > div:not(.right) { display: none; }
-  header.main .nav { gap: 14px; }
-  header.main .nav a { font-size: 10px; letter-spacing: 0.06em; }
-  header.main .right { gap: 10px; }
+  header.main .nav { gap: 22px; }
+  header.main .nav a { font-size: 13px; letter-spacing: 0.08em; }
+  header.main .right { gap: 14px; font-size: 12px; }
+  header.main .currency-toggle { font-size: 11px; padding: 6px 12px; }
+  header.main .cart-btn { padding: 7px 13px; }
+  header.main .cart-btn .count { font-size: 11px; }
 
   /* Store grid: 1-column cards, less padding */
   .v1 .grid { grid-template-columns: 1fr; }
