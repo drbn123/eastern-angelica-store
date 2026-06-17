@@ -49,16 +49,6 @@ export default async function VideosPage() {
 
   return (
     <main className="videos-page">
-      <div className="videos-hd">
-        <h1>
-          <i>Videos —</i> <b>Kuzko.</b>
-        </h1>
-        <p className="videos-sub">
-          {videos.length > 0
-            ? `${videos.length} videos`
-            : "Could not load videos — try refreshing."}
-        </p>
-      </div>
       <VideoGrid videos={videos} />
     </main>
   );
