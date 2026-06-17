@@ -10,6 +10,7 @@ export interface OrderItem {
   qty: number;
   unitPrice: number;
   currency: Currency;
+  imageUrl?: string;
 }
 
 export interface OrderAddress {

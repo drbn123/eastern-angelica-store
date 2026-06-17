@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       qty: item.qty,
       unitPrice: effectivePrice,
       currency,
+      ...(product.cover ? { imageUrl: product.cover.startsWith("/") ? `${base}${product.cover}` : product.cover } : {}),
     });
   }
 
