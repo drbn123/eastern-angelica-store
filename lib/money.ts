@@ -24,6 +24,6 @@ export function shippingCents(subtotalCents: number, currency: Currency): number
 }
 
 export function shippingLabel(subtotalCents: number, currency: Currency): string {
-  if (currency === "gbp") return subtotalCents >= 5000 ? "Free shipping" : "Standard shipping (UK)";
-  return subtotalCents >= 20000 ? "Dostawa gratis" : "Kurier DPD/InPost";
+  if (currency === "gbp") return subtotalCents >= 5000 ? "Free shipping" : "Standard shipping";
+  return subtotalCents >= 20000 ? "Dostawa gratis" : "Dostawa standardowa";
 }
