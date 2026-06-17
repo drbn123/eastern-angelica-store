@@ -21,6 +21,11 @@ export default function ZineView({ releases, initialIdx = 0 }: { releases: Relea
   const { cart, addToCart, currency } = useCart();
   const [idx, setIdx] = useState(initialIdx);
   const [vIdx, setVIdx] = useState(0);
+  const [lang, setLang] = useState<"en" | "pl">("en");
+
+  useEffect(() => {
+    if (navigator.language.startsWith("pl")) setLang("pl");
+  }, []);
 
   const r = releases[idx] ?? releases[0];
   const safeVIdx = Math.min(vIdx, r.variants.length - 1);
@@ -70,7 +75,7 @@ export default function ZineView({ releases, initialIdx = 0 }: { releases: Relea
               <i>{r.title}</i>
             </h2>
           </div>
-          <p className="desc">{r.desc}</p>
+          <p className="desc">{(lang === "pl" && r.descPl) ? r.descPl : r.descEn}</p>
           <dl className="dl">
             <dt>Format</dt>
             <dd>

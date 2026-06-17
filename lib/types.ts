@@ -18,7 +18,8 @@ export interface Release {
   cover?: string;
   back?: string;
   placeholder?: boolean;
-  desc: string;
+  descEn: string;
+  descPl: string;
 }
 
 export interface CartItem {

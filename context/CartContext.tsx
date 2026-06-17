@@ -47,7 +47,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("ea:cart");
       if (saved) setCart(JSON.parse(saved));
     } catch {}
-    setCurrencyState(readCurrencyCookie());
+    const hasCookie = !!document.cookie.match(/(?:^|;\s*)ea_currency=/);
+    if (hasCookie) {
+      setCurrencyState(readCurrencyCookie());
+    } else if (navigator.language.startsWith("pl")) {
+      setCurrencyState("pln");
+    }
     fetch("/api/products")
       .then((r) => r.json())
       .then((data: Release[]) => setProducts(data))

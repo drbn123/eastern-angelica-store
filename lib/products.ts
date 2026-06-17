@@ -58,7 +58,9 @@ function normalizeProduct(raw: unknown): Release {
     return { k, gbp, pln: pln || Math.round(gbp * PLN_RATE) };
   });
 
-  return { ...(r as unknown as Release), price, variants };
+  const descEn = (r.descEn as string | undefined) ?? (r.desc as string | undefined) ?? "";
+  const descPl = (r.descPl as string | undefined) ?? "";
+  return { ...(r as unknown as Release), price, variants, descEn, descPl };
 }
 
 export async function readProducts(): Promise<Release[]> {

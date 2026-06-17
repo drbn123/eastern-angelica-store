@@ -8,7 +8,7 @@ const FORMATS = ["CD", "LP", '12"', '7"', "CS", "TEE", "VEST", "LS", "BOOK", "BU
 const EMPTY: Omit<Release, "id"> = {
   title: "", artist: "", format: "CD", edition: "", year: new Date().getFullYear().toString(),
   cat: "", price: { gbp: 0, pln: 0 }, variants: [{ k: "Standard", gbp: 0, pln: 0 }], tag: "",
-  cover: "", back: "", placeholder: false, desc: "",
+  cover: "", back: "", placeholder: false, descEn: "", descPl: "",
 };
 
 function VariantEditor({
@@ -122,8 +122,11 @@ function ProductForm({
         </label>
       </div>
 
-      <label className="ap-label">Description
-        <textarea className="admin-input ap-desc" rows={3} value={form.desc} onChange={(e) => set("desc", e.target.value)} />
+      <label className="ap-label">Description (EN)
+        <textarea className="admin-input ap-desc" rows={3} value={form.descEn} onChange={(e) => set("descEn", e.target.value)} placeholder="English description…" />
+      </label>
+      <label className="ap-label">Description (PL)
+        <textarea className="admin-input ap-desc" rows={3} value={form.descPl} onChange={(e) => set("descPl", e.target.value)} placeholder="Opis po polsku…" />
       </label>
 
       <div className="ap-label">Variants (£ GBP · zł PLN)
@@ -230,7 +233,7 @@ export default function AdminProducts({ initialProducts }: { initialProducts: Re
                 <ProductForm
                   initial={{ title: p.title, artist: p.artist, format: p.format, edition: p.edition,
                     year: p.year, cat: p.cat, price: p.price, variants: p.variants, tag: p.tag,
-                    cover: p.cover ?? "", back: p.back ?? "", placeholder: !!p.placeholder, desc: p.desc }}
+                    cover: p.cover ?? "", back: p.back ?? "", placeholder: !!p.placeholder, descEn: p.descEn ?? "", descPl: p.descPl ?? "" }}
                   onSave={(data) => handleUpdate(p.id, data)}
                   onCancel={() => setEditingId(null)}
                   saving={saving}

@@ -17,7 +17,8 @@ export const RELEASES: Release[] = [
     tag: "cd",
     cover: "/assets/ea-cd.gif",
     back: "/assets/ea-jcard-outside.png",
-    desc: "Eastern Angelica on a CD, with included case/bookend. Put it on your mantlepiece, prop up your ancient texts with it, bury it in your garden with other offerings to the gods. It will yield results regardless. ALTERNATIVE ARTWORK. TWO BONUS TRACKS. Playable in most CD players. Seriously limited to a very few pieces. Once gone, they're gone. — Album Eastern Angelica na płycie CD, w zestawie z pomnikiem/podstawką. Postaw go na kominku, podeprzyj na niej swoją kolekcję starożytnych tekstów, lub zakop w ogrodzie razem z resztą podarunków dla bogów. W każdym razie czyni swoją powinność znakomicie. ALTERNATYWNA OKŁADKA. DWA DODATKOWE UTWORY. Działa w większości magnetofonów i odtwarzaczy CD. Jugosłowianin płakał jak sprzedawał. Dostępna bardzo limitowana ilość egzemplarzy. — Tracklist: Snowfall · 9 Gram · Praise the Flag · 747 · Baptist · Billie Jean 2 · Art-B · Indulgence · Nevermind · Green Crystal Freestyle (BONUS) · Nail (BONUS).",
+    descEn: "Eastern Angelica on a CD, with included case/bookend. Put it on your mantlepiece, prop up your ancient texts with it, bury it in your garden with other offerings to the gods. It will yield results regardless. ALTERNATIVE ARTWORK. TWO BONUS TRACKS. Playable in most CD players. Seriously limited to a very few pieces. Once gone, they're gone. — Tracklist: Snowfall · 9 Gram · Praise the Flag · 747 · Baptist · Billie Jean 2 · Art-B · Indulgence · Nevermind · Green Crystal Freestyle (BONUS) · Nail (BONUS).",
+    descPl: "Album Eastern Angelica na płycie CD, w zestawie z pomnikiem/podstawką. Postaw go na kominku, podeprzyj na niej swoją kolekcję starożytnych tekstów, lub zakop w ogrodzie razem z resztą podarunków dla bogów. W każdym razie czyni swoją powinność znakomicie. ALTERNATYWNA OKŁADKA. DWA DODATKOWE UTWORY. Działa w większości magnetofonów i odtwarzaczy CD. Jugosłowianin płakał jak sprzedawał. Dostępna bardzo limitowana ilość egzemplarzy. — Tracklista: Snowfall · 9 Gram · Praise the Flag · 747 · Baptist · Billie Jean 2 · Art-B · Indulgence · Nevermind · Green Crystal Freestyle (BONUS) · Nail (BONUS).",
   },
   {
     id: "EA-BOOK",
@@ -31,7 +32,8 @@ export const RELEASES: Release[] = [
     variants: [{ k: "Paperback", gbp: 25, pln: 0 }],
     tag: "book",
     placeholder: true,
-    desc: "POE-MAT — book of poems by Kuzko. [Placeholder — final cover and details TBC.]",
+    descEn: "POE-MAT — book of poems by Kuzko. [Placeholder — final cover and details TBC.]",
+    descPl: "",
   },
   {
     id: "EA-BUNDLE",
@@ -45,7 +47,8 @@ export const RELEASES: Release[] = [
     variants: [{ k: "CD + Book", gbp: 35, pln: 0 }],
     tag: "bundle",
     placeholder: true,
-    desc: "Bundle — Eastern Angelica CD together with the POE-MAT book. [Placeholder — final artwork and pricing TBC.]",
+    descEn: "Bundle — Eastern Angelica CD together with the POE-MAT book. [Placeholder — final artwork and pricing TBC.]",
+    descPl: "",
   },
   {
     id: "EA-005",
@@ -63,7 +66,8 @@ export const RELEASES: Release[] = [
     tag: "merch",
     cover: "/assets/ea-tee-white.png",
     back: "/assets/ea-tee-camo.png",
-    desc: "Heavyweight cotton tee, 220 g/m². Full Eastern Angelica coordinates back-print with the monument mark. Two variants — white with black print, or camo with pink print.",
+    descEn: "Heavyweight cotton tee, 220 g/m². Full Eastern Angelica coordinates back-print with the monument mark. Two variants — white with black print, or camo with pink print.",
+    descPl: "",
   },
   {
     id: "EA-VEST",
@@ -82,7 +86,8 @@ export const RELEASES: Release[] = [
     ],
     tag: "merch",
     placeholder: true,
-    desc: "EA Vest — Eastern Angelica branded vest. [Placeholder — final photo and details TBC.]",
+    descEn: "EA Vest — Eastern Angelica branded vest. [Placeholder — final photo and details TBC.]",
+    descPl: "",
   },
 ];
 
