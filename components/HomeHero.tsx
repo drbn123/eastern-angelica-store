@@ -7,9 +7,12 @@ import { coverSvg } from "@/lib/catalog";
 import type { Release } from "@/lib/types";
 import LogoHero from "@/components/LogoHero";
 import GifHover, { isGif } from "@/components/GifHover";
+import { useCart } from "@/context/CartContext";
+import { formatPrice } from "@/lib/money";
 
 export default function HomeHero({ releases, videoStrip }: { releases: Release[]; videoStrip?: React.ReactNode }) {
   const [hovered, setHovered] = useState<number | null>(null);
+  const { currency } = useCart();
   const recent = releases.slice(0, 5);
 
   return (
@@ -61,7 +64,7 @@ export default function HomeHero({ releases, videoStrip }: { releases: Release[]
                       {r.format} · {r.edition}
                     </span>
                   </div>
-                  <span className="v0-recent-price">£{r.price.gbp}</span>
+                  <span className="v0-recent-price">{formatPrice(r.price[currency], currency)}</span>
                 </Link>
               </li>
             ))}
