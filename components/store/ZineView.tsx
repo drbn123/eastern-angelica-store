@@ -44,17 +44,6 @@ export default function ZineView({ releases, initialIdx = 0 }: { releases: Relea
 
   return (
     <section className="v3">
-      <div className="hero">
-        <h1>↓ EA / Catalogue</h1>
-        <span className="date">
-          press → spring 2026 · no.{" "}
-          {String(idx + 1).padStart(2, "0")}/{String(releases.length).padStart(2, "0")}
-        </span>
-        <div className="xl">
-          <i>browse</i> <b>one</b> <i>by one</i>
-        </div>
-      </div>
-
       <div className="stack-nav">
         <span>{r.cat}</span>
         <div className="progress">

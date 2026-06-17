@@ -387,7 +387,7 @@ header.main .right {
 .v3 .zine .art::after { content: attr(data-cat); position: absolute; bottom: 20px; right: 20px; font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--fg-dim); }
 .v3 .zine .meta { padding: 48px; display: flex; flex-direction: column; gap: 28px; position: relative; }
 .v3 .zine .meta .cat { font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--fg-dim); }
-.v3 .zine .meta h2 { font-family: var(--script); font-weight: 400; font-size: clamp(56px, 7vw, 100px); line-height: 1; letter-spacing: 0.01em; text-wrap: pretty; }
+.v3 .zine .meta h2 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(32px, 4vw, 54px); line-height: 1.1; letter-spacing: 0.01em; text-wrap: pretty; }
 .v3 .zine .meta .artist { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.18em; }
 .v3 .zine .meta .desc { font-size: 13px; line-height: 1.7; max-width: 44ch; color: var(--fg-dim); font-family: var(--mono); }
 .v3 .zine .meta .dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; border-top: 1px solid var(--line); padding-top: 16px; }
