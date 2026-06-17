@@ -129,7 +129,9 @@ export async function POST(req: NextRequest) {
     "ZA","ZM","ZW","ZZ",
   ];
 
-  const session = await getStripe().checkout.sessions.create({
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await getStripe().checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
     shipping_address_collection: {
@@ -140,7 +142,7 @@ export async function POST(req: NextRequest) {
           {
             shipping_rate_data: {
               type: "fixed_amount",
-              fixed_amount: { amount: 545, currency: "gbp" },
+              fixed_amount: { amount: currency === "gbp" ? 545 : 2700, currency },
               display_name: "UK — Royal Mail Small Parcel (LP/12\", 2kg)",
               delivery_estimate: {
                 minimum: { unit: "business_day" as const, value: 3 },
@@ -166,6 +168,11 @@ export async function POST(req: NextRequest) {
     cancel_url: `${base}/store`,
     metadata: { currency },
   });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Stripe error";
+    console.error("[checkout]", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
   await createOrder({
     status: "pending",
