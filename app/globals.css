@@ -1286,4 +1286,55 @@ header.main {
 
 /* ── Order wait page ── */
 .order-wait { max-width: 480px; margin: 0 auto; padding: 120px 24px; font-family: var(--mono); font-size: 13px; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.5; }
+
+/* ── Mobile (≤600px) ─────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Header: collapse to compact 2-row, hide empty spacer div */
+  header.main {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 10px 16px; text-align: center;
+  }
+  header.main > div:not(.right) { display: none; }
+  header.main .nav { gap: 14px; }
+  header.main .nav a { font-size: 10px; letter-spacing: 0.06em; }
+  header.main .right { gap: 10px; }
+
+  /* Store grid: 1-column cards, less padding */
+  .v1 .grid { grid-template-columns: 1fr; }
+  .v1 .card { padding: 16px; }
+  .v1 .card h3 { font-size: 24px; }
+  .v1 .hero { padding: 20px 16px 16px; }
+
+  /* Store filterbar: chips scroll, sort text fixed on right */
+  .v1 .filterbar { padding: 10px 16px; gap: 8px; }
+  .v1 .filterbar .chips { min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex: 1; }
+  .v1 .filterbar .chips::-webkit-scrollbar { display: none; }
+  .v1 .filterbar .dim { white-space: nowrap; flex-shrink: 0; font-size: 10px; }
+
+  /* One-by-one: compact padding */
+  .v3 .stack-nav { padding: 10px 16px; top: 0; }
+  .v3 .zine .art { padding: 20px 16px; }
+  .v3 .zine .meta { padding: 20px 16px; gap: 16px; }
+  .v3 .zine .meta .price-xl { font-size: 28px; }
+  .v3 .zine .meta .buy-btn { padding: 13px 20px; font-size: 11px; }
+
+  /* Order page */
+  .order-page { padding: 32px 16px 60px; }
+  .op-tracker { margin: 0 0 32px; }
+  .op-step-label { font-size: 9px; max-width: 60px; }
+
+  /* Track page */
+  .track-page { padding: 32px 16px 60px; }
+  .track-back { margin-bottom: 28px; }
+  .track-title { margin-bottom: 28px; }
+
+  /* Cart */
+  .cart { width: 100vw; }
+
+  /* Videos grid: stay 2-col on mobile (thumbnails are small enough) */
+  .videos-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Home releases list */
+  .v0-side { padding: 16px; }
+}
 .sc-body { padding: 8px; }
