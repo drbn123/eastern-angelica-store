@@ -36,13 +36,16 @@ function fmt(iso: string) {
 function OrderRow({
   order,
   onUpdate,
+  onDelete,
 }: {
   order: Order;
   onUpdate: (updated: Order) => void;
+  onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(order.note ?? "");
+  const [noteSaved, setNoteSaved] = useState(false);
   const [trackingInput, setTrackingInput] = useState(order.trackingNumber ?? "");
 
   async function changeStatus(status: OrderStatus) {
@@ -67,8 +70,20 @@ function OrderRow({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note }),
     });
-    if (res.ok) onUpdate(await res.json());
+    if (res.ok) {
+      onUpdate(await res.json());
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
+    }
     setBusy(false);
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete order EA-${order.number}? This cannot be undone.`)) return;
+    setBusy(true);
+    const res = await fetch(`/api/orders/${order.id}`, { method: "DELETE" });
+    if (res.ok) onDelete(order.id);
+    else setBusy(false);
   }
 
   const nextStatus = STATUS_NEXT[order.status];
@@ -140,14 +155,15 @@ function OrderRow({
           </div>
 
           <div className="ao-note-row">
-            <input
+            <textarea
               className="admin-input ao-note-input"
               placeholder="Internal note…"
+              rows={3}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
             <button className="admin-btn-ghost" onClick={saveNote} disabled={busy}>
-              Save note
+              {noteSaved ? "Saved ✓" : "Save note"}
             </button>
           </div>
 
@@ -174,6 +190,13 @@ function OrderRow({
                 Cancel
               </button>
             )}
+            <button
+              className="admin-btn-ghost ao-delete-btn"
+              onClick={handleDelete}
+              disabled={busy}
+            >
+              Delete order
+            </button>
           </div>
         </div>
       )}
@@ -214,6 +237,19 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
   }
 
+  function handleDelete(id: string) {
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+    knownIds.current.delete(id);
+  }
+
+  async function deleteVisible() {
+    if (!confirm(`Delete all ${visible.length} visible orders? This cannot be undone.`)) return;
+    const ids = visible.map((o) => o.id);
+    await Promise.all(ids.map((id) => fetch(`/api/orders/${id}`, { method: "DELETE" })));
+    setOrders((prev) => prev.filter((o) => !ids.includes(o.id)));
+    ids.forEach((id) => knownIds.current.delete(id));
+  }
+
   const counts: Partial<Record<StatusFilter, number>> = { all: orders.length };
   for (const o of orders) counts[o.status] = (counts[o.status] ?? 0) + 1;
 
@@ -241,6 +277,11 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
         {newCount > 0 && (
           <button className="ao-new-badge" onClick={() => { setNewCount(0); setSortDir("desc"); setStatusFilter("all"); }}>
             {newCount} new order{newCount > 1 ? "s" : ""} ↓
+          </button>
+        )}
+        {visible.length > 0 && (
+          <button className="admin-btn-ghost ao-delete-all-btn" onClick={deleteVisible}>
+            Delete {visible.length === orders.length ? "all" : `${visible.length} visible`}
           </button>
         )}
       </div>
@@ -298,7 +339,7 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
 
       <div className="ao-list">
         {visible.map((o) => (
-          <OrderRow key={o.id} order={o} onUpdate={handleUpdate} />
+          <OrderRow key={o.id} order={o} onUpdate={handleUpdate} onDelete={handleDelete} />
         ))}
       </div>
     </div>

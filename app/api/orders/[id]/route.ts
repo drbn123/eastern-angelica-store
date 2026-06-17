@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
-import { getOrder, updateOrder, type OrderStatus } from "@/lib/orders";
+import { getOrder, updateOrder, deleteOrder, type OrderStatus } from "@/lib/orders";
 import { sendShippingUpdate } from "@/lib/email";
 
 const VALID_STATUSES: OrderStatus[] = ["pending", "paid", "fulfilled", "shipped", "delivered", "cancelled", "refunded"];
@@ -36,4 +36,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     sendShippingUpdate(updated);
   }
   return Response.json(updated);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthenticated())) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await params;
+  const ok = await deleteOrder(id);
+  if (!ok) return Response.json({ error: "Not found" }, { status: 404 });
+  return Response.json({ ok: true });
 }

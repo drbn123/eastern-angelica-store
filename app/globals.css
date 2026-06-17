@@ -1017,11 +1017,14 @@ header.main {
 .ao-tracking-rm:hover { color: var(--fg); }
 .ao-stripe-link { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--fg-dim); text-decoration: underline; }
 .ao-stripe-link:hover { color: var(--fg); }
-.ao-note-row { display: flex; gap: 8px; }
-.ao-note-input { flex: 1; }
+.ao-note-row { display: flex; gap: 8px; align-items: flex-start; }
+.ao-note-input { flex: 1; resize: vertical; min-height: 64px; }
 .ao-actions { display: flex; gap: 8px; align-items: center; padding-top: 4px; flex-wrap: wrap; }
 .ao-tracking-input { flex: 1; min-width: 180px; }
 .ao-cancel-btn { color: var(--fg-dim); }
+.ao-delete-btn { color: #c0392b; margin-left: auto; }
+.ao-delete-btn:hover { color: #e74c3c; border-color: #e74c3c; }
+.ao-delete-all-btn { color: #c0392b; font-size: 10px; padding: 4px 10px; }
 .ao-new-badge {
   background: #16a34a; color: #fff; border: none;
   padding: 5px 12px; font-family: var(--mono); font-size: 10px;

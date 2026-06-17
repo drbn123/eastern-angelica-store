@@ -152,6 +152,27 @@ export async function listOrders(limit = 100): Promise<Order[]> {
   return fsReadOrders().slice(0, limit);
 }
 
+export async function deleteOrder(id: string): Promise<boolean> {
+  if (useKV()) {
+    const client = await kvClient();
+    const existing = await client.get(`order:${id}`);
+    if (!existing) return false;
+    const ids = await client.lrange<string>("orders", 0, -1);
+    const newIds = ids.filter((i: string) => i !== id);
+    await client.del(`order:${id}`);
+    await client.del("orders");
+    if (newIds.length > 0) {
+      await client.rpush("orders", ...newIds);
+    }
+    return true;
+  }
+  const orders = fsReadOrders();
+  const next = orders.filter((o) => o.id !== id);
+  if (next.length === orders.length) return false;
+  fsWriteOrders(next);
+  return true;
+}
+
 export async function getOrderByNumberAndEmail(number: number, email: string): Promise<Order | null> {
   if (useKV()) {
     const client = await kvClient();
