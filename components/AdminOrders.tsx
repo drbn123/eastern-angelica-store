@@ -14,8 +14,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const STATUS_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
-  paid: "fulfilled",
-  fulfilled: "shipped",
+  paid: "shipped",
+  shipped: "fulfilled",
 };
 
 function flag(country: string) {
