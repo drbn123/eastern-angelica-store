@@ -18,12 +18,10 @@ export function toCents(amount: number): number {
   return Math.round(amount * 100);
 }
 
-export function shippingCents(subtotalCents: number, currency: Currency): number {
-  if (currency === "gbp") return subtotalCents >= 5000 ? 0 : 599;
-  return subtotalCents >= 20000 ? 0 : 1900;
+export function shippingCents(_subtotalCents: number, currency: Currency): number {
+  return currency === "gbp" ? 545 : 4900;
 }
 
-export function shippingLabel(subtotalCents: number, currency: Currency): string {
-  if (currency === "gbp") return subtotalCents >= 5000 ? "Free shipping" : "Standard shipping";
-  return subtotalCents >= 20000 ? "Dostawa gratis" : "Dostawa standardowa";
+export function shippingLabel(_subtotalCents: number, currency: Currency): string {
+  return currency === "gbp" ? "Shipping from £5.45" : "Dostawa od 49 zł";
 }

@@ -137,19 +137,44 @@ export async function POST(req: NextRequest) {
     shipping_address_collection: {
       allowed_countries: WORLDWIDE_COUNTRIES,
     },
-    shipping_options: [
-      {
-        shipping_rate_data: {
-          type: "fixed_amount",
-          fixed_amount: { amount: shipCents, currency },
-          display_name: shippingLabel(subtotalCents, currency),
-          delivery_estimate: {
-            minimum: { unit: "business_day" as const, value: 3 },
-            maximum: { unit: "business_day" as const, value: 14 },
+    shipping_options: currency === "gbp"
+      ? [
+          {
+            shipping_rate_data: {
+              type: "fixed_amount",
+              fixed_amount: { amount: 545, currency: "gbp" },
+              display_name: "Small Parcel (LP/12\") — Royal Mail UK",
+              delivery_estimate: {
+                minimum: { unit: "business_day" as const, value: 3 },
+                maximum: { unit: "business_day" as const, value: 5 },
+              },
+            },
           },
-        },
-      },
-    ],
+          {
+            shipping_rate_data: {
+              type: "fixed_amount",
+              fixed_amount: { amount: 980, currency: "gbp" },
+              display_name: "International Tracked — Royal Mail (tracking + £50 cover)",
+              delivery_estimate: {
+                minimum: { unit: "business_day" as const, value: 3 },
+                maximum: { unit: "business_day" as const, value: 14 },
+              },
+            },
+          },
+        ]
+      : [
+          {
+            shipping_rate_data: {
+              type: "fixed_amount",
+              fixed_amount: { amount: 4900, currency: "pln" },
+              display_name: "International Tracked — Royal Mail (tracking + £50 cover)",
+              delivery_estimate: {
+                minimum: { unit: "business_day" as const, value: 3 },
+                maximum: { unit: "business_day" as const, value: 14 },
+              },
+            },
+          },
+        ],
     success_url: `${base}/store?order=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/store`,
     metadata: { currency },
