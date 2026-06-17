@@ -31,6 +31,7 @@ export default function GridView({ releases, onProductClick }: { releases: Relea
   );
 
   const shown = releases.filter((r) => matchFilter(r.format, filter));
+  const activeFilters = FILTERS.filter(([k]) => k === "all" || releases.some((r) => matchFilter(r.format, k)));
 
   return (
     <section className="v1">
@@ -42,7 +43,7 @@ export default function GridView({ releases, onProductClick }: { releases: Relea
 
       <div className="filterbar">
         <div className="chips">
-          {FILTERS.map(([k, v]) => (
+          {activeFilters.map(([k, v]) => (
             <button
               key={k}
               className={`chip${filter === k ? " on" : ""}`}
