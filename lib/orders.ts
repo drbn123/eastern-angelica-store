@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import type { Currency } from "./money";
 
-export type OrderStatus = "pending" | "paid" | "fulfilled" | "shipped" | "cancelled" | "refunded";
+export type OrderStatus = "pending" | "paid" | "fulfilled" | "shipped" | "delivered" | "cancelled" | "refunded";
 
 export interface OrderItem {
   id: string;
@@ -37,6 +37,7 @@ export interface Order {
   stripePaymentIntent?: string;
   createdAt: string;
   paidAt?: string;
+  trackingNumber?: string;
   note?: string;
 }
 

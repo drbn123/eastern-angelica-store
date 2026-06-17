@@ -42,10 +42,13 @@ export async function sendOrderConfirmation(order: Order): Promise<void> {
 export async function sendShippingUpdate(order: Order): Promise<void> {
   const r = client();
   if (!r || !order.email) return;
-  const shipped = order.status === "shipped";
-  const subject = shipped ? `Your order has shipped — EA-${order.number}` : `Order fulfilled — EA-${order.number}`;
-  const body = shipped
-    ? `<p style="font-size:14px;margin:0 0 8px">Your order is on its way.</p><p style="font-size:13px;color:#555">Use the link below to track your delivery.</p>`
-    : `<p style="font-size:14px;margin:0 0 8px">Your order is complete.</p><p style="font-size:13px;color:#555">Thank you for your support — enjoy the music.</p>`;
+  const delivered = order.status === "delivered";
+  const subject = delivered ? `Your order has been delivered — EA-${order.number}` : `Your order has shipped — EA-${order.number}`;
+  const trackingLine = order.trackingNumber
+    ? `<p style="font-size:13px;color:#555">Tracking number: <strong>${order.trackingNumber}</strong></p>`
+    : "";
+  const body = delivered
+    ? `<p style="font-size:14px;margin:0 0 8px">Your order has been delivered.</p><p style="font-size:13px;color:#555">Thank you for your support — enjoy the music.</p>`
+    : `<p style="font-size:14px;margin:0 0 8px">Your order is on its way.</p>${trackingLine}<p style="font-size:13px;color:#555">Use the link below to track your delivery.</p>`;
   await r.emails.send({ from: FROM, to: order.email, subject, html: html(order, subject, body) });
 }

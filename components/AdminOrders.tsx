@@ -9,13 +9,15 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   paid: "Paid",
   fulfilled: "Fulfilled",
   shipped: "Shipped",
+  delivered: "Delivered",
   cancelled: "Cancelled",
   refunded: "Refunded",
 };
 
 const STATUS_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
-  paid: "shipped",
-  shipped: "fulfilled",
+  paid: "fulfilled",
+  fulfilled: "shipped",
+  shipped: "delivered",
 };
 
 function flag(country: string) {
@@ -41,13 +43,18 @@ function OrderRow({
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(order.note ?? "");
+  const [trackingInput, setTrackingInput] = useState(order.trackingNumber ?? "");
 
   async function changeStatus(status: OrderStatus) {
     setBusy(true);
+    const body: Record<string, unknown> = { status };
+    if (status === "shipped" && trackingInput.trim()) {
+      body.trackingNumber = trackingInput.trim();
+    }
     const res = await fetch(`/api/orders/${order.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(body),
     });
     if (res.ok) onUpdate(await res.json());
     setBusy(false);
@@ -107,6 +114,19 @@ function OrderRow({
           )}
 
           <div className="ao-meta">
+            {order.trackingNumber && (
+              <div className="ao-tracking">
+                Tracking: <strong>{order.trackingNumber}</strong>
+                <a
+                  href={`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ao-tracking-rm"
+                >
+                  → Royal Mail
+                </a>
+              </div>
+            )}
             {order.stripePaymentIntent && (
               <a
                 className="ao-stripe-link"
@@ -132,6 +152,14 @@ function OrderRow({
           </div>
 
           <div className="ao-actions">
+            {nextStatus === "shipped" && (
+              <input
+                className="admin-input ao-tracking-input"
+                placeholder="Tracking number (optional)"
+                value={trackingInput}
+                onChange={(e) => setTrackingInput(e.target.value)}
+              />
+            )}
             {nextStatus && (
               <button className="admin-btn-primary" onClick={() => changeStatus(nextStatus)} disabled={busy}>
                 Mark as {STATUS_LABELS[nextStatus]}
@@ -153,7 +181,7 @@ function OrderRow({
   );
 }
 
-const STATUS_FILTERS = ["all", "paid", "fulfilled", "shipped", "cancelled", "pending", "refunded"] as const;
+const STATUS_FILTERS = ["all", "paid", "fulfilled", "shipped", "delivered", "cancelled", "pending", "refunded"] as const;
 type StatusFilter = typeof STATUS_FILTERS[number];
 
 export default function AdminOrders({ initialOrders }: { initialOrders: Order[] }) {
@@ -220,7 +248,7 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
       {/* ── Filter bar ── */}
       <div className="ao-filters">
         <div className="ao-filter-status">
-          {(["all", "paid", "fulfilled", "shipped", "pending", "cancelled"] as StatusFilter[]).map((s) => (
+          {(["all", "paid", "fulfilled", "shipped", "delivered", "pending", "cancelled"] as StatusFilter[]).map((s) => (
             counts[s] !== undefined || s === "all" ? (
               <button
                 key={s}

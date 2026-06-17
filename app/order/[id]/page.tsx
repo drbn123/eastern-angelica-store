@@ -4,18 +4,19 @@ import { getOrder } from "@/lib/orders";
 import { formatPrice } from "@/lib/money";
 import type { OrderStatus } from "@/lib/orders";
 
-const STEPS: { id: OrderStatus | "placed"; label: string }[] = [
+const STEPS: { id: string; label: string }[] = [
   { id: "placed",    label: "Order placed" },
   { id: "paid",      label: "Payment confirmed" },
   { id: "shipped",   label: "Shipped" },
-  { id: "fulfilled", label: "Delivered" },
+  { id: "delivered", label: "Delivered" },
 ];
 
 function stepIndex(status: OrderStatus): number {
   if (status === "pending")   return 0;
   if (status === "paid")      return 1;
+  if (status === "fulfilled") return 1; // internal only, maps to same step as paid
   if (status === "shipped")   return 2;
-  if (status === "fulfilled") return 3;
+  if (status === "delivered") return 3;
   return -1;
 }
 
@@ -62,6 +63,21 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               </div>
             );
           })}
+        </div>
+      )}
+
+      {order.trackingNumber && (
+        <div className="op-tracking">
+          <div className="op-tracking-label">Tracking number</div>
+          <div className="op-tracking-number">{order.trackingNumber}</div>
+          <a
+            className="op-tracking-link"
+            href={`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Track on Royal Mail →
+          </a>
         </div>
       )}
 

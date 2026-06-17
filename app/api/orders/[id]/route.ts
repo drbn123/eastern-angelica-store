@@ -3,7 +3,7 @@ import { isAuthenticated } from "@/lib/auth";
 import { getOrder, updateOrder, type OrderStatus } from "@/lib/orders";
 import { sendShippingUpdate } from "@/lib/email";
 
-const VALID_STATUSES: OrderStatus[] = ["pending", "paid", "fulfilled", "shipped", "cancelled", "refunded"];
+const VALID_STATUSES: OrderStatus[] = ["pending", "paid", "fulfilled", "shipped", "delivered", "cancelled", "refunded"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAuthenticated())) {
@@ -20,7 +20,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const body = await req.json() as { status?: OrderStatus; note?: string };
+  const body = await req.json() as { status?: OrderStatus; note?: string; trackingNumber?: string };
 
   if (body.status && !VALID_STATUSES.includes(body.status)) {
     return Response.json({ error: "Invalid status" }, { status: 400 });
@@ -29,9 +29,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const updated = await updateOrder(id, {
     ...(body.status ? { status: body.status } : {}),
     ...(body.note !== undefined ? { note: body.note } : {}),
+    ...(body.trackingNumber !== undefined ? { trackingNumber: body.trackingNumber } : {}),
   });
   if (!updated) return Response.json({ error: "Not found" }, { status: 404 });
-  if (body.status === "shipped" || body.status === "fulfilled") {
+  if (body.status === "shipped" || body.status === "delivered") {
     sendShippingUpdate(updated);
   }
   return Response.json(updated);

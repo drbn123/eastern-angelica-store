@@ -921,11 +921,13 @@ header.main {
 .ao-badge-paid { background: color-mix(in oklab, #4ade80, transparent 80%); color: #16a34a; }
 .ao-badge-fulfilled { background: color-mix(in oklab, #60a5fa, transparent 80%); color: #1d4ed8; }
 .ao-badge-shipped { background: color-mix(in oklab, #a78bfa, transparent 80%); color: #6d28d9; }
+.ao-badge-delivered { background: color-mix(in oklab, #34d399, transparent 80%); color: #065f46; }
 .ao-badge-cancelled { background: color-mix(in oklab, #f87171, transparent 80%); color: #b91c1c; }
 .ao-badge-refunded { background: color-mix(in oklab, var(--fg-dim), transparent 80%); color: var(--fg-dim); }
 [data-theme="light"] .ao-badge-paid { color: #15803d; }
 [data-theme="light"] .ao-badge-fulfilled { color: #1e40af; }
 [data-theme="light"] .ao-badge-shipped { color: #5b21b6; }
+[data-theme="light"] .ao-badge-delivered { color: #064e3b; }
 [data-theme="light"] .ao-badge-cancelled { color: #991b1b; }
 .ao-detail { padding: 0 4px 16px; display: flex; flex-direction: column; gap: 16px; }
 .ao-items { border: 1px solid var(--line); }
@@ -935,12 +937,17 @@ header.main {
 .ao-item span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .ao-addr { font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--fg-dim); }
 .ao-addr-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px; color: var(--fg); }
-.ao-meta { display: flex; gap: 12px; }
+.ao-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.ao-tracking { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); display: flex; gap: 10px; align-items: center; }
+.ao-tracking strong { color: var(--fg); }
+.ao-tracking-rm { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--fg-dim); text-decoration: underline; }
+.ao-tracking-rm:hover { color: var(--fg); }
 .ao-stripe-link { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--fg-dim); text-decoration: underline; }
 .ao-stripe-link:hover { color: var(--fg); }
 .ao-note-row { display: flex; gap: 8px; }
 .ao-note-input { flex: 1; }
-.ao-actions { display: flex; gap: 8px; align-items: center; padding-top: 4px; }
+.ao-actions { display: flex; gap: 8px; align-items: center; padding-top: 4px; flex-wrap: wrap; }
+.ao-tracking-input { flex: 1; min-width: 180px; }
 .ao-cancel-btn { color: var(--fg-dim); }
 .ao-new-badge {
   background: #16a34a; color: #fff; border: none;
@@ -1219,8 +1226,9 @@ header.main {
 .op-num { font-family: var(--mono); font-size: 22px; letter-spacing: 0.1em; }
 .op-status { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; padding: 3px 8px; border: 1px solid currentColor; opacity: 0.6; }
 .op-status-paid { color: #4a9; border-color: #4a9; opacity: 1; }
-.op-status-shipped { color: #59b; border-color: #59b; opacity: 1; }
 .op-status-fulfilled { color: #4a9; border-color: #4a9; opacity: 1; }
+.op-status-shipped { color: #59b; border-color: #59b; opacity: 1; }
+.op-status-delivered { color: #4ade80; border-color: #4ade80; opacity: 1; }
 .op-status-cancelled, .op-status-refunded { opacity: 0.4; }
 .op-meta { font-size: 12px; opacity: 0.5; font-family: var(--mono); }
 
@@ -1244,6 +1252,13 @@ header.main {
 .op-item span:last-child { font-family: var(--mono); text-align: right; }
 .op-item-ship { opacity: 0.6; }
 .op-total { font-family: var(--mono); font-size: 15px; border-bottom: none !important; border-top: 1px solid var(--fg) !important; }
+
+/* Tracking number */
+.op-tracking { display: flex; align-items: center; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); margin-bottom: 32px; flex-wrap: wrap; }
+.op-tracking-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.5; }
+.op-tracking-number { font-family: var(--mono); font-size: 14px; letter-spacing: 0.08em; }
+.op-tracking-link { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--fg); text-decoration: underline; opacity: 0.7; }
+.op-tracking-link:hover { opacity: 1; }
 
 /* Address */
 .op-addr { margin-bottom: 40px; }
