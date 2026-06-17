@@ -32,6 +32,11 @@ export default function CartSidebar() {
   const handleCheckout = async (r: Region) => {
     setPickingRegion(false);
     setCheckoutLoading(true);
+    fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "cart", event: "checkout_start" }),
+    }).catch(() => {});
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",

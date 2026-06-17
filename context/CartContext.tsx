@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import type { CartItem, Release } from "@/lib/types";
-import { type Currency, CURRENCY_COOKIE, DEFAULT_CURRENCY } from "@/lib/money";
+import { type Currency, CURRENCY_COOKIE, DEFAULT_CURRENCY, variantPrice } from "@/lib/money";
 
 interface CartContextValue {
   cart: CartItem[];
@@ -41,6 +41,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState("");
   const [products, setProducts] = useState<Release[]>([]);
   const [currency, setCurrencyState] = useState<Currency>(DEFAULT_CURRENCY);
+  const snapshotTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionId = useRef<string | null>(null);
+
+  function getSessionId(): string {
+    if (sessionId.current) return sessionId.current;
+    const stored = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("ea:sid") : null;
+    if (stored) { sessionId.current = stored; return stored; }
+    const id = crypto.randomUUID();
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem("ea:sid", id);
+    sessionId.current = id;
+    return id;
+  }
 
   useEffect(() => {
     try {
@@ -62,6 +74,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("ea:cart", JSON.stringify(cart));
   }, [cart]);
+
+  // Debounced live cart snapshot (2s delay, only when cart has items)
+  useEffect(() => {
+    if (cart.length === 0) return;
+    if (snapshotTimer.current) clearTimeout(snapshotTimer.current);
+    snapshotTimer.current = setTimeout(() => {
+      const sid = getSessionId();
+      const items = cart.flatMap((c) => {
+        const release = products.find((p) => p.id === c.id);
+        const variant = release?.variants[c.vIdx];
+        if (!release || !variant) return [];
+        return [{ title: release.title, variant: variant.k, qty: c.qty, unitPrice: variantPrice(variant, currency) }];
+      });
+      const totalCents = items.reduce((s, i) => s + Math.round(i.unitPrice * 100) * i.qty, 0);
+      fetch("/api/analytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "cart_snapshot", sessionId: sid, items, currency, totalCents }),
+      }).catch(() => {});
+    }, 2000);
+  }, [cart, currency, products]);
 
   const setCurrency = useCallback((c: Currency) => {
     saveCurrencyCookie(c);
