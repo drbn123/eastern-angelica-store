@@ -29,6 +29,7 @@ export interface Order {
   items: OrderItem[];
   subtotalCents: number;
   shippingCents: number;
+  shippingLabel?: string;
   totalCents: number;
   email: string;
   address: OrderAddress | null;

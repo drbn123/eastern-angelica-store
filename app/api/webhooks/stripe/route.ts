@@ -26,13 +26,22 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const raw = event.data.object as Stripe.Checkout.Session;
-    const session = await getStripe().checkout.sessions.retrieve(raw.id);
+    const session = await getStripe().checkout.sessions.retrieve(raw.id, {
+      expand: ["shipping_cost.shipping_rate"],
+    });
     const order = await getOrderByStripeSession(session.id);
     if (!order) return NextResponse.json({ received: true });
 
     // Stripe API 2026-05-27: shipping address is in collected_information.shipping_details
     const shipping = session.collected_information?.shipping_details;
     const addr = shipping?.address;
+
+    const actualShipCents = session.shipping_cost?.amount_total ?? order.shippingCents;
+    const shippingRate = session.shipping_cost?.shipping_rate;
+    const shippingLabel = (shippingRate && typeof shippingRate !== "string")
+      ? (shippingRate as Stripe.ShippingRate).display_name ?? undefined
+      : undefined;
+
     const updated = await updateOrder(order.id, {
       status: "paid",
       email: session.customer_details?.email ?? "",
@@ -46,6 +55,9 @@ export async function POST(req: NextRequest) {
             country: addr.country ?? "",
           }
         : null,
+      shippingCents: actualShipCents,
+      shippingLabel,
+      totalCents: order.subtotalCents + actualShipCents,
       stripePaymentIntent:
         typeof session.payment_intent === "string" ? session.payment_intent : undefined,
       paidAt: new Date().toISOString(),

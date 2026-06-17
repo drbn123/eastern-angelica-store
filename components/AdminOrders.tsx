@@ -90,7 +90,7 @@ function OrderRow({
               </div>
             ))}
             <div className="ao-item ao-item-ship">
-              <span>Shipping</span>
+              <span>{order.shippingLabel ?? "Shipping"}</span>
               <span></span>
               <span>{order.shippingCents === 0 ? "Free" : formatPrice(order.shippingCents / 100, order.currency)}</span>
             </div>
