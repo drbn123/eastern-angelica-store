@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
     mode: "payment",
     line_items: lineItems,
     shipping_address_collection: {
-      allowed_countries: WORLDWIDE_COUNTRIES,
+      allowed_countries: (region === "uk" || (!region && currency === "gbp")) ? ["GB"] : WORLDWIDE_COUNTRIES,
     },
     shipping_options: (region === "uk" || (!region && currency === "gbp"))
       ? [
