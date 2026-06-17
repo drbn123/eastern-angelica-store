@@ -3,10 +3,19 @@
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import Cover from "@/components/Cover";
-import { formatPrice, variantPrice, toCents, shippingCents, shippingLabel } from "@/lib/money";
+import { formatPrice, variantPrice, toCents } from "@/lib/money";
+
+type Region = "uk" | "international";
+
+const SHIP: Record<Region, { gbp: number; pln: number; label: string }> = {
+  uk:            { gbp: 545,  pln: 545,  label: "UK — Royal Mail Small Parcel" },
+  international: { gbp: 980,  pln: 4900, label: "International Tracked — Royal Mail" },
+};
 
 export default function CartSidebar() {
   const { cart, cartOpen, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
+  const [region, setRegion] = useState<Region | null>(null);
+  const [pickingRegion, setPickingRegion] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const items = cart
@@ -17,16 +26,17 @@ export default function CartSidebar() {
     (s, it) => s + toCents(variantPrice(it.release.variants[it.vIdx], currency)) * it.qty,
     0,
   );
-  const shipCents = cart.length > 0 ? shippingCents(subtotalCents, currency) : 0;
-  const totalCents = subtotalCents + shipCents;
+  const shipCents = region ? SHIP[region][currency] : null;
+  const totalCents = subtotalCents + (shipCents ?? 0);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (r: Region) => {
+    setPickingRegion(false);
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: items.map((it) => ({ id: it.id, vIdx: it.vIdx, qty: it.qty })), currency }),
+        body: JSON.stringify({ items: items.map((it) => ({ id: it.id, vIdx: it.vIdx, qty: it.qty })), currency, region: r }),
       });
       const data = await res.json();
       if (data.url) {
@@ -100,16 +110,36 @@ export default function CartSidebar() {
             <span>{formatPrice(subtotalCents / 100, currency)}</span>
           </div>
           <div className="row">
-            <span>{shippingLabel(subtotalCents, currency)}</span>
-            <span>{shipCents === 0 ? "Free" : formatPrice(shipCents / 100, currency)}</span>
+            <span>{region ? SHIP[region].label : "Shipping"}</span>
+            <span>{shipCents == null ? "—" : formatPrice(shipCents / 100, currency)}</span>
           </div>
           <div className="row total">
             <span>Total</span>
-            <span>{formatPrice(totalCents / 100, currency)}</span>
+            <span>{shipCents == null ? formatPrice(subtotalCents / 100, currency) : formatPrice(totalCents / 100, currency)}</span>
           </div>
-          <button className="checkout" disabled={items.length === 0 || checkoutLoading} onClick={handleCheckout}>
-            {checkoutLoading ? "Loading…" : "→ checkout"}
-          </button>
+
+          {pickingRegion ? (
+            <div className="region-pick">
+              <div className="region-label">Where are you shipping to?</div>
+              <div className="region-btns">
+                <button onClick={() => { setRegion("uk"); handleCheckout("uk"); }}>
+                  🇬🇧 UK<span>{formatPrice(SHIP.uk[currency] / 100, currency)}</span>
+                </button>
+                <button onClick={() => { setRegion("international"); handleCheckout("international"); }}>
+                  🌍 International<span>{formatPrice(SHIP.international[currency] / 100, currency)}</span>
+                </button>
+              </div>
+              <button className="region-back" onClick={() => setPickingRegion(false)}>← back</button>
+            </div>
+          ) : (
+            <button
+              className="checkout"
+              disabled={items.length === 0 || checkoutLoading}
+              onClick={() => setPickingRegion(true)}
+            >
+              {checkoutLoading ? "Loading…" : "→ checkout"}
+            </button>
+          )}
         </div>
       </aside>
     </>

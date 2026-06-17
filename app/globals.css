@@ -425,6 +425,12 @@ header.main .right {
 .cart .ft .row.total { font-size: 22px; font-family: var(--mono); text-transform: none; letter-spacing: 0; padding-top: 8px; border-top: 1px solid var(--line); }
 .cart .ft .checkout { padding: 16px; text-align: center; background: var(--accent); color: var(--accent-ink); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px; }
 .cart .ft .checkout:disabled { opacity: 0.4; cursor: not-allowed; }
+.cart .ft .region-pick { display: flex; flex-direction: column; gap: 8px; }
+.cart .ft .region-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; opacity: 0.6; font-family: var(--mono); text-align: center; padding-top: 4px; }
+.cart .ft .region-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cart .ft .region-btns button { padding: 12px 8px; background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cart .ft .region-btns button span { font-size: 14px; letter-spacing: 0; }
+.cart .ft .region-back { font-size: 11px; opacity: 0.5; font-family: var(--mono); text-align: center; padding: 4px; }
 
 /* Footer */
 footer.main { border-top: 1px solid var(--line); padding: 52px 0 0; display: grid; grid-template-columns: 1fr 1fr 1.6fr; align-items: start; }

@@ -18,8 +18,8 @@ interface CartItemInput {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json() as { items: CartItemInput[]; currency: Currency };
-  const { items, currency } = body;
+  const body = await req.json() as { items: CartItemInput[]; currency: Currency; region?: "uk" | "international" };
+  const { items, currency, region } = body;
 
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "Empty cart" }, { status: 400 });
@@ -134,27 +134,16 @@ export async function POST(req: NextRequest) {
     shipping_address_collection: {
       allowed_countries: WORLDWIDE_COUNTRIES,
     },
-    shipping_options: currency === "gbp"
+    shipping_options: (region === "uk" || (!region && currency === "gbp"))
       ? [
           {
             shipping_rate_data: {
               type: "fixed_amount",
               fixed_amount: { amount: 545, currency: "gbp" },
-              display_name: "Small Parcel (LP/12\") — Royal Mail UK",
+              display_name: "UK — Royal Mail Small Parcel (LP/12\", 2kg)",
               delivery_estimate: {
                 minimum: { unit: "business_day" as const, value: 3 },
                 maximum: { unit: "business_day" as const, value: 5 },
-              },
-            },
-          },
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: { amount: 980, currency: "gbp" },
-              display_name: "International Tracked — Royal Mail (tracking + £50 cover)",
-              delivery_estimate: {
-                minimum: { unit: "business_day" as const, value: 3 },
-                maximum: { unit: "business_day" as const, value: 14 },
               },
             },
           },
@@ -163,7 +152,7 @@ export async function POST(req: NextRequest) {
           {
             shipping_rate_data: {
               type: "fixed_amount",
-              fixed_amount: { amount: 4900, currency: "pln" },
+              fixed_amount: { amount: currency === "gbp" ? 980 : 4900, currency },
               display_name: "International Tracked — Royal Mail (tracking + £50 cover)",
               delivery_estimate: {
                 minimum: { unit: "business_day" as const, value: 3 },
