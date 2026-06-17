@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import VideoGrid from "@/components/VideoGrid";
+
+export const metadata: Metadata = {
+  title: "Videos",
+  description: "Music videos and visual work by KUZKO.",
+};
 
 const CHANNEL_ID = "UCUMBjZdeg-7RnXatIRU2AGw";
 

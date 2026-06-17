@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getOrder } from "@/lib/orders";
 import { formatPrice } from "@/lib/money";
 import type { OrderStatus } from "@/lib/orders";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const order = await getOrder(id);
+  return { title: order ? `Order EA-${order.number}` : "Order" };
+}
 
 const STEPS: { id: string; label: string }[] = [
   { id: "placed",    label: "Order placed" },

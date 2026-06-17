@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { readPosts } from "@/lib/posts";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Journal",
+  description: "News, notes and updates from KUZKO.",
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {

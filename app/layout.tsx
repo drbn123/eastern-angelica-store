@@ -29,9 +29,15 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Eastern Angelica — EA Recordings",
-  description:
-    "Independent record label out of Warsaw. Folk, rap, and liturgy of the eastern edge.",
+  title: {
+    default: "KUZKO",
+    template: "%s | KUZKO",
+  },
+  description: "Independent music. Physical releases, merch and more. London.",
+  openGraph: {
+    siteName: "KUZKO",
+    locale: "en_GB",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
