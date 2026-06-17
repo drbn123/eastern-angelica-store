@@ -130,9 +130,7 @@ export async function POST(req: NextRequest) {
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
-    payment_method_types: currency === "gbp"
-      ? ["card"]
-      : ["card", "blik", "p24"],
+    automatic_payment_methods: { enabled: true },
     line_items: lineItems,
     shipping_address_collection: {
       allowed_countries: WORLDWIDE_COUNTRIES,
