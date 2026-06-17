@@ -137,6 +137,11 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return "";
+  return String.fromCodePoint(...code.toUpperCase().split("").map((c) => 0x1F1E6 + c.charCodeAt(0) - 65));
+}
+
 // ── Live Carts Section ────────────────────────────────────────────────────────
 
 function LiveCarts() {
@@ -194,6 +199,7 @@ function LiveCarts() {
               <div key={c.sessionId} className="an-live-cart">
                 <div className="an-live-cart-head">
                   <span className="an-live-cart-id">···{c.sessionId.slice(-6)}</span>
+                  {c.country && <span title={c.country}>{countryFlag(c.country)}</span>}
                   <span className="an-live-cart-currency">{c.currency.toUpperCase()}</span>
                   <span className="an-live-cart-total">{formatPrice(c.totalCents / 100, c.currency as "gbp" | "pln")}</span>
                   <span className="an-live-cart-time">{timeAgo(c.ts)}</span>

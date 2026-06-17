@@ -250,6 +250,34 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
     ids.forEach((id) => knownIds.current.delete(id));
   }
 
+  function exportCSV() {
+    const headers = ["Order", "Date", "Email", "Status", "Currency", "Total", "Items", "Name", "Address", "City", "Postal", "Country", "Tracking", "Note"];
+    const rows = visible.map((o) => [
+      `EA-${o.number}`,
+      new Date(o.createdAt).toLocaleDateString("en-GB"),
+      o.email,
+      o.status,
+      o.currency.toUpperCase(),
+      (o.totalCents / 100).toFixed(2),
+      o.items.map((it) => `${it.qty}x ${it.title} (${it.variant})`).join("; "),
+      o.address?.name ?? "",
+      [o.address?.line1, o.address?.line2].filter(Boolean).join(", "),
+      o.address?.city ?? "",
+      o.address?.postal_code ?? "",
+      o.address?.country ?? "",
+      o.trackingNumber ?? "",
+      o.note ?? "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `kuzko-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
   const counts: Partial<Record<StatusFilter, number>> = { all: orders.length };
   for (const o of orders) counts[o.status] = (counts[o.status] ?? 0) + 1;
 
@@ -277,6 +305,11 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
         {newCount > 0 && (
           <button className="ao-new-badge" onClick={() => { setNewCount(0); setSortDir("desc"); setStatusFilter("all"); }}>
             {newCount} new order{newCount > 1 ? "s" : ""} ↓
+          </button>
+        )}
+        {visible.length > 0 && (
+          <button className="admin-btn-ghost ao-export-btn" onClick={exportCSV}>
+            Export CSV ({visible.length})
           </button>
         )}
         {visible.length > 0 && (

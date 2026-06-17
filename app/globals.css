@@ -1025,6 +1025,7 @@ header.main {
 .ao-delete-btn { color: #c0392b; margin-left: auto; }
 .ao-delete-btn:hover { color: #e74c3c; border-color: #e74c3c; }
 .ao-delete-all-btn { color: #c0392b; font-size: 10px; padding: 4px 10px; }
+.ao-export-btn { font-size: 10px; padding: 4px 10px; }
 .ao-new-badge {
   background: #16a34a; color: #fff; border: none;
   padding: 5px 12px; font-family: var(--mono); font-size: 10px;

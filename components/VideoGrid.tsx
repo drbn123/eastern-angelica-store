@@ -77,11 +77,9 @@ export default function VideoGrid({ videos }: { videos: Video[] }) {
   }
 
   const toggle = (id: string) => setActive(active === id ? null : id);
-  const [featured, ...rest] = videos;
 
   return (
     <section className="v1">
-      {/* Hero — same as store */}
       <div className="hero">
         <h1><i>Videos</i></h1>
         <div className="blurb" />
@@ -91,28 +89,10 @@ export default function VideoGrid({ videos }: { videos: Video[] }) {
         </div>
       </div>
 
-      {/* Grid — featured spans 2 cols, rest fills 2-col grid */}
       <div className="vid-grid">
-
-        {/* Featured */}
-        <article className="vid-card vid-featured" key={featured.videoId}>
-          <span className="idx">№ 01</span>
-          <Thumb
-            video={featured}
-            playing={active === featured.videoId}
-            onPlay={() => toggle(featured.videoId)}
-            sizes="100vw"
-          />
-          <div className="vid-meta">
-            <span className="vid-label">Kuzko · {formatDate(featured.published)}</span>
-            <h2 className="vid-title-lg"><i>{trackName(featured.title)}</i></h2>
-          </div>
-        </article>
-
-        {/* Rest */}
-        {rest.map((v, i) => (
+        {videos.map((v, i) => (
           <article key={v.videoId} className="vid-card">
-            <span className="idx">№ {String(i + 2).padStart(2, "0")}</span>
+            <span className="idx">№ {String(i + 1).padStart(2, "0")}</span>
             <Thumb
               video={v}
               playing={active === v.videoId}
@@ -124,7 +104,6 @@ export default function VideoGrid({ videos }: { videos: Video[] }) {
             </div>
           </article>
         ))}
-
       </div>
     </section>
   );

@@ -35,6 +35,7 @@ export interface LiveCart {
   items: LiveCartItem[];
   currency: string;
   totalCents: number;
+  country?: string;
 }
 
 export interface AnalyticsData {

@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
         totalCents: number;
       };
       if (!sessionId) return NextResponse.json({ ok: true });
-      await trackCartSnapshot({ sessionId, ts: Date.now(), items, currency, totalCents });
+      const country = req.headers.get("x-vercel-ip-country") ?? "";
+      await trackCartSnapshot({ sessionId, ts: Date.now(), items, currency, totalCents, country });
       return NextResponse.json({ ok: true });
     }
 
