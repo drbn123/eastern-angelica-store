@@ -1363,5 +1363,28 @@ header.main {
 
   /* Home releases list */
   .v0-side { padding: 16px; }
+
+  /* Footer: single column, horizontal dividers instead of vertical */
+  footer.main {
+    grid-template-columns: 1fr;
+    padding-top: 32px;
+  }
+  footer.main > div,
+  footer.main > .footer-contact {
+    padding: 24px 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  footer.main > .footer-contact { border-bottom: none; }
+  footer.main .brand > span { font-size: 40px; }
+  footer.main .brand small { white-space: nowrap; }
+
+  /* Legal bar: stack copyright above social icons, leave room for cart FAB */
+  footer.legal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 20px 90px;
+  }
 }
 .sc-body { padding: 8px; }
