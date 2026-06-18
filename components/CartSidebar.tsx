@@ -88,20 +88,26 @@ export default function CartSidebar() {
         const container = mapContainerRef.current;
         if (!container || container.querySelector("inpost-geowidget")) return;
 
+        const onPointSelected = (point: Record<string, unknown>) => {
+          const a = (point.address ?? {}) as Record<string, string>;
+          const d = (point.address_details ?? {}) as Record<string, string>;
+          const addr =
+            [a.line1, a.line2].filter(Boolean).join(", ") ||
+            [d.street, d.building_number, d.post_code, d.city].filter(Boolean).join(" ");
+          setPaczkomat({ id: (point.name as string) ?? "", address: addr });
+          setShowPaczkomatMap(false);
+        };
+
         const widget = document.createElement("inpost-geowidget");
         widget.setAttribute("token", INPOST_TOKEN);
         widget.setAttribute("language", "pl");
         widget.setAttribute("config", "parcelcollect");
 
-        widget.addEventListener("onpoint", ((e: Event) => {
-          const detail = (e as CustomEvent).detail ?? {};
-          const a = detail.address ?? {};
-          const d = detail.address_details ?? {};
-          const addr =
-            [a.line1, a.line2].filter(Boolean).join(", ") ||
-            [d.street, d.building_number, d.post_code, d.city].filter(Boolean).join(" ");
-          setPaczkomat({ id: detail.name ?? "", address: addr });
-          setShowPaczkomatMap(false);
+        // v5 selection comes through the init API callback, NOT an "onpoint" DOM event.
+        // The widget always invokes callbacks registered via addPointSelectedCallback.
+        widget.addEventListener("inpost.geowidget.init", ((e: Event) => {
+          const api = (e as CustomEvent).detail?.api;
+          api?.addPointSelectedCallback?.(onPointSelected);
         }) as EventListener);
 
         container.appendChild(widget);
