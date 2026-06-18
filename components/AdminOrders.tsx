@@ -220,6 +220,7 @@ type StatusFilter = typeof STATUS_FILTERS[number];
 
 export default function AdminOrders({ initialOrders }: { initialOrders: Order[] }) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [shipFilter, setShipFilter] = useState<"all" | "paczkomat" | "uk">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [currencyFilter, setCurrencyFilter] = useState<"all" | "gbp" | "pln">("all");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
@@ -291,10 +292,24 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
-  const counts: Partial<Record<StatusFilter, number>> = { all: orders.length };
-  for (const o of orders) counts[o.status] = (counts[o.status] ?? 0) + 1;
+  // Primary (top-level) filter: shipping destination. Paczkomat orders carry a
+  // paczkomatId; everything else (Royal Mail / UK) does not.
+  const isPaczkomat = (o: Order) => !!o.paczkomatId;
+  const shipFiltered = orders.filter((o) =>
+    shipFilter === "all" ? true : shipFilter === "paczkomat" ? isPaczkomat(o) : !isPaczkomat(o),
+  );
+  const shipCounts = {
+    all: orders.length,
+    paczkomat: orders.filter(isPaczkomat).length,
+    uk: orders.filter((o) => !isPaczkomat(o)).length,
+  };
 
-  const visible = orders
+  // Status counts reflect the current shipping filter so the secondary filter
+  // shows the breakdown within the selected destination.
+  const counts: Partial<Record<StatusFilter, number>> = { all: shipFiltered.length };
+  for (const o of shipFiltered) counts[o.status] = (counts[o.status] ?? 0) + 1;
+
+  const visible = shipFiltered
     .filter((o) => statusFilter === "all" || o.status === statusFilter)
     .filter((o) => currencyFilter === "all" || o.currency === currencyFilter)
     .filter((o) => {
@@ -316,7 +331,7 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
       <div className="ao-header">
         <span className="admin-topbar-title">Orders ({orders.length})</span>
         {newCount > 0 && (
-          <button className="ao-new-badge" onClick={() => { setNewCount(0); setSortDir("desc"); setStatusFilter("all"); }}>
+          <button className="ao-new-badge" onClick={() => { setNewCount(0); setSortDir("desc"); setStatusFilter("all"); setShipFilter("all"); }}>
             {newCount} new order{newCount > 1 ? "s" : ""} ↓
           </button>
         )}
@@ -332,7 +347,20 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
         )}
       </div>
 
-      {/* ── Filter bar ── */}
+      {/* ── Primary filter: shipping destination ── */}
+      <div className="ao-filter-ship">
+        <button className={`ao-ship-btn${shipFilter === "all" ? " on" : ""}`} onClick={() => setShipFilter("all")}>
+          All orders<span className="ao-filter-count">{shipCounts.all}</span>
+        </button>
+        <button className={`ao-ship-btn${shipFilter === "paczkomat" ? " on" : ""}`} onClick={() => setShipFilter("paczkomat")}>
+          🇵🇱 Paczkomat<span className="ao-filter-count">{shipCounts.paczkomat}</span>
+        </button>
+        <button className={`ao-ship-btn${shipFilter === "uk" ? " on" : ""}`} onClick={() => setShipFilter("uk")}>
+          🇬🇧 UK · Royal Mail<span className="ao-filter-count">{shipCounts.uk}</span>
+        </button>
+      </div>
+
+      {/* ── Secondary filter bar: status ── */}
       <div className="ao-filters">
         <div className="ao-filter-status">
           {(["all", "paid", "fulfilled", "shipped", "delivered", "pending", "cancelled"] as StatusFilter[]).map((s) => (

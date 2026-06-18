@@ -6,9 +6,23 @@ const SESSION_COOKIE = "ea_session";
 // Admin credentials and the session signing secret come from environment
 // variables. The dev fallbacks only apply to local `next dev`; production sets
 // real values (ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_SESSION_SECRET) on Vercel.
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "admin";
+// A second operator account is optional: set ADMIN_USERNAME_2 / ADMIN_PASSWORD_2.
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET ?? "dev-only-insecure-secret";
+
+interface AdminAccount {
+  username: string;
+  password: string;
+}
+
+function adminAccounts(): AdminAccount[] {
+  const accounts: AdminAccount[] = [
+    { username: process.env.ADMIN_USERNAME ?? "admin", password: process.env.ADMIN_PASSWORD ?? "admin" },
+  ];
+  if (process.env.ADMIN_USERNAME_2 && process.env.ADMIN_PASSWORD_2) {
+    accounts.push({ username: process.env.ADMIN_USERNAME_2, password: process.env.ADMIN_PASSWORD_2 });
+  }
+  return accounts;
+}
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
@@ -27,10 +41,14 @@ function safeEqual(a: string, b: string): boolean {
 export function checkCredentials(username: unknown, password: unknown): boolean {
   if (typeof username !== "string" || typeof password !== "string") return false;
   // Compare HMACs so neither timing nor length reveals the real credentials.
-  return (
-    safeEqual(sign(username), sign(ADMIN_USERNAME)) &&
-    safeEqual(sign(password), sign(ADMIN_PASSWORD))
-  );
+  // Check every configured account without early-exit, then return the result.
+  let ok = false;
+  for (const acct of adminAccounts()) {
+    if (safeEqual(sign(username), sign(acct.username)) && safeEqual(sign(password), sign(acct.password))) {
+      ok = true;
+    }
+  }
+  return ok;
 }
 
 // Stateless signed session token: base64url(payload) + "." + HMAC(payload).
