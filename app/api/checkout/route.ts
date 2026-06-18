@@ -94,8 +94,9 @@ export async function POST(req: NextRequest) {
       shippingCents: shipCents,
       totalCents: subtotalCents + shipCents,
       email: "demo@example.com",
+      phone: region === "pl" ? "+48 600 100 200" : "+44 20 7946 0000",
       address: region === "pl"
-        ? null
+        ? { name: "Demo Klient", line1: "ul. Demonstracyjna 1", city: "Warszawa", postal_code: "00-001", country: "PL" }
         : { name: "Demo Customer", line1: "1 Demo Street", city: "London", postal_code: "EC1A 1BB", country: "GB" },
       stripeSessionId: `demo_${Date.now()}`,
       paidAt: new Date().toISOString(),
@@ -114,10 +115,14 @@ export async function POST(req: NextRequest) {
     session = await getStripe().checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
-      // PL paczkomat: paczkomat IS the destination — skip shipping address collection
-      // UK: restrict to GB addresses
+      // Phone is required to dispatch an InPost paczkomat (SMS pickup code) and
+      // useful for Royal Mail — collect it on every order. Email is always collected.
+      phone_number_collection: { enabled: true },
+      // PL paczkomat: the locker IS the destination, so we don't collect a shipping
+      // address — but we still need the recipient's name/address for the InPost label,
+      // so require billing address. UK: collect a GB shipping address as before.
       ...(isPL
-        ? {}
+        ? { billing_address_collection: "required" as const }
         : {
             shipping_address_collection: {
               allowed_countries: ["GB"] as Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[],

@@ -33,6 +33,7 @@ export interface Order {
   shippingLabel?: string;
   totalCents: number;
   email: string;
+  phone?: string;
   address: OrderAddress | null;
   stripeSessionId: string;
   stripePaymentIntent?: string;

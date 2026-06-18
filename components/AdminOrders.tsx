@@ -123,6 +123,9 @@ function OrderRow({
               <div className="ao-addr-label">InPost Paczkomat 📦</div>
               <div><strong>{order.paczkomatId}</strong></div>
               {order.paczkomatAddress && <div>{order.paczkomatAddress}</div>}
+              {order.address?.name && <div className="ao-addr-recipient">{order.address.name}</div>}
+              {order.phone && <div>📞 {order.phone}</div>}
+              {order.email && <div>✉ {order.email}</div>}
             </div>
           )}
           {order.address && !order.paczkomatId && (
@@ -132,6 +135,7 @@ function OrderRow({
               <div>{order.address.line1}{order.address.line2 ? `, ${order.address.line2}` : ""}</div>
               <div>{order.address.city} {order.address.postal_code}</div>
               <div>{order.address.country}</div>
+              {order.phone && <div>📞 {order.phone}</div>}
             </div>
           )}
 
@@ -258,11 +262,12 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
   }
 
   function exportCSV() {
-    const headers = ["Order", "Date", "Email", "Status", "Currency", "Total", "Items", "Name", "Address", "City", "Postal", "Country", "Tracking", "Note"];
+    const headers = ["Order", "Date", "Email", "Phone", "Status", "Currency", "Total", "Items", "Name", "Address", "City", "Postal", "Country", "Paczkomat", "Tracking", "Note"];
     const rows = visible.map((o) => [
       `EA-${o.number}`,
       new Date(o.createdAt).toLocaleDateString("en-GB"),
       o.email,
+      o.phone ?? "",
       o.status,
       o.currency.toUpperCase(),
       (o.totalCents / 100).toFixed(2),
@@ -272,6 +277,7 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
       o.address?.city ?? "",
       o.address?.postal_code ?? "",
       o.address?.country ?? "",
+      o.paczkomatId ? `${o.paczkomatId}${o.paczkomatAddress ? ` (${o.paczkomatAddress})` : ""}` : "",
       o.trackingNumber ?? "",
       o.note ?? "",
     ]);

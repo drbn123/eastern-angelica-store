@@ -1032,6 +1032,7 @@ header.main {
 .ao-item span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .ao-addr { font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--fg-dim); }
 .ao-addr-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px; color: var(--fg); }
+.ao-addr-recipient { margin-top: 6px; color: var(--fg); }
 .ao-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .ao-tracking { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); display: flex; gap: 10px; align-items: center; }
 .ao-tracking strong { color: var(--fg); }

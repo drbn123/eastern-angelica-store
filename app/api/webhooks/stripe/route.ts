@@ -33,9 +33,13 @@ export async function POST(req: NextRequest) {
     const order = await getOrderByStripeSession(session.id);
     if (!order) return NextResponse.json({ received: true });
 
-    // Stripe API 2026-05-27: shipping address is in collected_information.shipping_details
+    // Stripe API 2026-05-27: shipping address is in collected_information.shipping_details.
+    // PL paczkomat orders have no shipping address — fall back to the billing details
+    // (name/address/phone) collected on the Stripe page so we can label the parcel.
     const shipping = session.collected_information?.shipping_details;
-    const addr = shipping?.address;
+    const billing = session.customer_details;
+    const addr = shipping?.address ?? billing?.address ?? null;
+    const recipientName = shipping?.name ?? billing?.name ?? "";
 
     const actualShipCents = session.shipping_cost?.amount_total ?? order.shippingCents;
     const shippingRate = session.shipping_cost?.shipping_rate;
@@ -48,10 +52,11 @@ export async function POST(req: NextRequest) {
 
     const updated = await updateOrder(order.id, {
       status: "paid",
-      email: session.customer_details?.email ?? "",
+      email: billing?.email ?? "",
+      phone: billing?.phone ?? undefined,
       address: addr
         ? {
-            name: shipping?.name ?? session.customer_details?.name ?? "",
+            name: recipientName,
             line1: addr.line1 ?? "",
             line2: addr.line2 ?? undefined,
             city: addr.city ?? "",
