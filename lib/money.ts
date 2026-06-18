@@ -19,9 +19,9 @@ export function toCents(amount: number): number {
 }
 
 export function shippingCents(_subtotalCents: number, currency: Currency): number {
-  return currency === "gbp" ? 545 : 4900;
+  return currency === "gbp" ? 330 : 1200;
 }
 
 export function shippingLabel(_subtotalCents: number, currency: Currency): string {
-  return currency === "gbp" ? "Shipping from £5.45" : "Dostawa od 49 zł";
+  return currency === "gbp" ? "Shipping from £3.30" : "Dostawa od 12 zł";
 }

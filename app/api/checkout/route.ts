@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { readProducts } from "@/lib/products";
 import { createOrder } from "@/lib/orders";
-import { type Currency, toCents, shippingCents, shippingLabel } from "@/lib/money";
+import { type Currency, toCents, shippingCents } from "@/lib/money";
 import { sendWhatsApp } from "@/lib/notify";
 
 function getStripe(): Stripe {
@@ -18,8 +18,14 @@ interface CartItemInput {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json() as { items: CartItemInput[]; currency: Currency; region?: "uk" | "international" };
-  const { items, currency, region } = body;
+  const body = await req.json() as {
+    items: CartItemInput[];
+    currency: Currency;
+    region?: "uk" | "pl";
+    paczkomatId?: string;
+    paczkomatAddress?: string;
+  };
+  const { items, currency, region, paczkomatId, paczkomatAddress } = body;
 
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "Empty cart" }, { status: 400 });
@@ -88,86 +94,62 @@ export async function POST(req: NextRequest) {
       shippingCents: shipCents,
       totalCents: subtotalCents + shipCents,
       email: "demo@example.com",
-      address: {
-        name: "Demo Customer",
-        line1: "1 Demo Street",
-        city: currency === "gbp" ? "London" : "Warszawa",
-        postal_code: currency === "gbp" ? "EC1A 1BB" : "00-001",
-        country: currency === "gbp" ? "GB" : "PL",
-      },
+      address: region === "pl"
+        ? null
+        : { name: "Demo Customer", line1: "1 Demo Street", city: "London", postal_code: "EC1A 1BB", country: "GB" },
       stripeSessionId: `demo_${Date.now()}`,
       paidAt: new Date().toISOString(),
+      ...(paczkomatId ? { paczkomatId, paczkomatAddress } : {}),
     });
     sendWhatsApp(order);
     return NextResponse.json({ url: `${base}/order/${order.id}` });
   }
 
-  const WORLDWIDE_COUNTRIES: Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[] = [
-    "AC","AD","AE","AF","AG","AI","AL","AM","AO","AQ","AR","AT","AU","AW","AX","AZ",
-    "BA","BB","BD","BE","BF","BG","BH","BI","BJ","BL","BM","BN","BO","BQ","BR","BS","BT","BV","BW","BY","BZ",
-    "CA","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CV","CW","CY","CZ",
-    "DE","DJ","DK","DM","DO","DZ",
-    "EC","EE","EG","EH","ER","ES","ET",
-    "FI","FJ","FK","FO","FR",
-    "GA","GB","GD","GE","GF","GG","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY",
-    "HK","HN","HR","HT","HU",
-    "ID","IE","IL","IM","IN","IO","IQ","IS","IT",
-    "JE","JM","JO","JP",
-    "KE","KG","KH","KI","KM","KN","KR","KW","KY","KZ",
-    "LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY",
-    "MA","MC","MD","ME","MF","MG","MK","ML","MM","MN","MO","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ",
-    "NA","NC","NE","NG","NI","NL","NO","NP","NR","NU","NZ",
-    "OM",
-    "PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PY",
-    "QA",
-    "RE","RO","RS","RU","RW",
-    "SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","SS","ST","SV","SX","SZ",
-    "TA","TC","TD","TF","TG","TH","TJ","TK","TL","TM","TN","TO","TR","TT","TV","TW","TZ",
-    "UA","UG","US","UY","UZ",
-    "VA","VC","VE","VG","VN","VU",
-    "WF","WS","XK","YE","YT",
-    "ZA","ZM","ZW","ZZ",
-  ];
+  const isPL = region === "pl";
+
+  const shippingAmount = currency === "gbp" ? 330 : 1200;
 
   let session: Stripe.Checkout.Session;
   try {
     session = await getStripe().checkout.sessions.create({
-    mode: "payment",
-    line_items: lineItems,
-    shipping_address_collection: {
-      allowed_countries: (region === "uk" || (!region && currency === "gbp")) ? ["GB"] : WORLDWIDE_COUNTRIES,
-    },
-    shipping_options: (region === "uk" || (!region && currency === "gbp"))
-      ? [
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: { amount: currency === "gbp" ? 545 : 2700, currency },
-              display_name: "UK — Royal Mail Small Parcel (LP/12\", 2kg)",
-              delivery_estimate: {
-                minimum: { unit: "business_day" as const, value: 3 },
-                maximum: { unit: "business_day" as const, value: 5 },
-              },
+      mode: "payment",
+      line_items: lineItems,
+      // PL paczkomat: paczkomat IS the destination — skip shipping address collection
+      // UK: restrict to GB addresses
+      ...(isPL
+        ? {}
+        : {
+            shipping_address_collection: {
+              allowed_countries: ["GB"] as Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[],
             },
+          }),
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: { amount: shippingAmount, currency },
+            display_name: isPL
+              ? "InPost Paczkomat — dostawa do paczkomatu"
+              : "UK — Royal Mail Small Parcel (LP/12\", 2kg)",
+            delivery_estimate: isPL
+              ? {
+                  minimum: { unit: "business_day" as const, value: 1 },
+                  maximum: { unit: "business_day" as const, value: 3 },
+                }
+              : {
+                  minimum: { unit: "business_day" as const, value: 3 },
+                  maximum: { unit: "business_day" as const, value: 5 },
+                },
           },
-        ]
-      : [
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: { amount: currency === "gbp" ? 980 : 4900, currency },
-              display_name: "International Tracked — Royal Mail (tracking + £50 cover)",
-              delivery_estimate: {
-                minimum: { unit: "business_day" as const, value: 3 },
-                maximum: { unit: "business_day" as const, value: 14 },
-              },
-            },
-          },
-        ],
-    success_url: `${base}/order/by-session?s={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/store`,
-    metadata: { currency },
-  });
+        },
+      ],
+      success_url: `${base}/order/by-session?s={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${base}/store`,
+      metadata: {
+        currency,
+        ...(paczkomatId ? { paczkomatId, paczkomatAddress: paczkomatAddress ?? "" } : {}),
+      },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Stripe error";
     console.error("[checkout]", msg);
@@ -184,6 +166,7 @@ export async function POST(req: NextRequest) {
     email: "",
     address: null,
     stripeSessionId: session.id,
+    ...(paczkomatId ? { paczkomatId, paczkomatAddress } : {}),
   });
 
   return NextResponse.json({ url: session.url });

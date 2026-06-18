@@ -455,6 +455,17 @@ header.main .right {
 .cart .ft .region-btns button { padding: 12px 8px; background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .cart .ft .region-btns button span { font-size: 14px; letter-spacing: 0; }
 .cart .ft .region-back { font-size: 11px; opacity: 0.5; font-family: var(--mono); text-align: center; padding: 4px; }
+.cart .ft .paczkomat-chosen { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; background: var(--bg-2); border: 1px solid var(--line); }
+.cart .ft .paczkomat-chosen-id { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; }
+.cart .ft .paczkomat-chosen-addr { font-size: 11px; opacity: 0.65; line-height: 1.4; }
+
+/* InPost Paczkomat map overlay */
+.paczkomat-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; background: var(--bg); }
+.paczkomat-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; flex-shrink: 0; }
+.paczkomat-header button { font-family: var(--mono); font-size: 12px; opacity: 0.6; letter-spacing: 0.1em; }
+.paczkomat-header button:hover { opacity: 1; }
+.paczkomat-map { flex: 1; min-height: 0; }
+.paczkomat-map > * { width: 100% !important; height: 100% !important; }
 
 /* Footer */
 footer.main { border-top: 1px solid var(--line); padding: 52px 0 0; display: grid; grid-template-columns: 1fr 1fr 1.6fr; align-items: start; }

@@ -118,7 +118,14 @@ function OrderRow({
             </div>
           </div>
 
-          {order.address && (
+          {order.paczkomatId && (
+            <div className="ao-addr">
+              <div className="ao-addr-label">InPost Paczkomat 📦</div>
+              <div><strong>{order.paczkomatId}</strong></div>
+              {order.paczkomatAddress && <div>{order.paczkomatAddress}</div>}
+            </div>
+          )}
+          {order.address && !order.paczkomatId && (
             <div className="ao-addr">
               <div className="ao-addr-label">Delivery address</div>
               <div>{order.address.name}</div>

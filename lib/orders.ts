@@ -40,6 +40,8 @@ export interface Order {
   paidAt?: string;
   trackingNumber?: string;
   note?: string;
+  paczkomatId?: string;
+  paczkomatAddress?: string;
 }
 
 const useKV = () => !!process.env.KV_REST_API_URL;

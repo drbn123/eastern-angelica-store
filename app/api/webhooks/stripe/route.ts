@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
       ? (shippingRate as Stripe.ShippingRate).display_name ?? undefined
       : undefined;
 
+    const paczkomatId = session.metadata?.paczkomatId || order.paczkomatId;
+    const paczkomatAddress = session.metadata?.paczkomatAddress || order.paczkomatAddress;
+
     const updated = await updateOrder(order.id, {
       status: "paid",
       email: session.customer_details?.email ?? "",
@@ -62,6 +65,7 @@ export async function POST(req: NextRequest) {
       stripePaymentIntent:
         typeof session.payment_intent === "string" ? session.payment_intent : undefined,
       paidAt: new Date().toISOString(),
+      ...(paczkomatId ? { paczkomatId, paczkomatAddress } : {}),
     });
     if (updated) {
       sendWhatsApp(updated);
