@@ -465,7 +465,11 @@ header.main .right {
 .cart-map-head button { font-family: var(--mono); font-size: 11px; opacity: 0.6; letter-spacing: 0.1em; }
 .cart-map-head button:hover { opacity: 1; }
 .cart-map { flex: 1; min-height: 0; position: relative; overflow: hidden; }
-.cart-map inpost-geowidget { display: block; width: 100%; height: 100%; filter: grayscale(1) contrast(1.04); }
+/* Dark monochrome map to match the (default) dark theme — invert turns the light
+   OSM tiles into a dark map, grayscale strips colour. */
+.cart-map inpost-geowidget { display: block; width: 100%; height: 100%; filter: grayscale(1) invert(1) brightness(0.82) contrast(1.08); }
+/* Light theme: keep the map light, just desaturated. */
+[data-theme="light"] .cart-map inpost-geowidget { filter: grayscale(1) contrast(1.04); }
 .paczkomat-fallback { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px 24px; text-align: center; }
 .paczkomat-fallback p { font-size: 15px; max-width: 420px; }
 .paczkomat-fallback-sub { font-size: 12px; opacity: 0.6; font-family: var(--mono); line-height: 1.6; }
