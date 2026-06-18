@@ -464,8 +464,7 @@ header.main .right {
 .paczkomat-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; flex-shrink: 0; }
 .paczkomat-header button { font-family: var(--mono); font-size: 12px; opacity: 0.6; letter-spacing: 0.1em; }
 .paczkomat-header button:hover { opacity: 1; }
-.paczkomat-map { flex: 1; min-height: 0; }
-.paczkomat-map > * { width: 100% !important; height: 100% !important; }
+.paczkomat-map { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 
 /* Footer */
 footer.main { border-top: 1px solid var(--line); padding: 52px 0 0; display: grid; grid-template-columns: 1fr 1fr 1.6fr; align-items: start; }

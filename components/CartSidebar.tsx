@@ -62,6 +62,8 @@ export default function CartSidebar() {
       setShowPaczkomatMap(false);
       mapReadyRef.current = false;
     });
+    // Leaflet renders black tiles when container was hidden on init — trigger resize to fix
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
   }, []);
 
   useEffect(() => {
