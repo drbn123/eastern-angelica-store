@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import Cover from "@/components/Cover";
 import { formatPrice, variantPrice, toCents } from "@/lib/money";
@@ -26,7 +26,8 @@ declare global {
   }
 }
 
-const easyPackInited = { current: false };
+// Module-level — persists across re-renders, tracks one-time SDK setup
+const sdk = { scriptLoaded: false, widgetCreated: false };
 
 export default function CartSidebar() {
   const { cart, cartOpen, openCart, closeCart, updateQty, removeItem, clearCart, products, currency } = useCart();
@@ -35,7 +36,6 @@ export default function CartSidebar() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [showPaczkomatMap, setShowPaczkomatMap] = useState(false);
   const [paczkomat, setPaczkomat] = useState<Paczkomat | null>(null);
-  const mapReadyRef = useRef(false);
 
   const items = cart
     .map((c) => ({ ...c, release: products.find((r) => r.id === c.id) }))
@@ -45,29 +45,25 @@ export default function CartSidebar() {
     (s, it) => s + toCents(variantPrice(it.release.variants[it.vIdx], currency)) * it.qty,
     0,
   );
-  const shipCents = region ? SHIP[region][currency] : null;
-  const totalCents = subtotalCents + (shipCents ?? 0);
+  const displayedShipCents = paczkomat ? SHIP.pl[currency] : region ? SHIP[region][currency] : null;
+  const displayedTotal = subtotalCents + (displayedShipCents ?? 0);
+  const displayedShipLabel = paczkomat ? SHIP.pl.label : region ? SHIP[region].label : "Shipping";
 
-  const mountWidget = useCallback(() => {
-    if (mapReadyRef.current) return;
-    mapReadyRef.current = true;
-    if (!easyPackInited.current) {
-      window.easyPack?.init({ defaultLocale: "pl", points: { types: ["parcel_locker_only"] } });
-      easyPackInited.current = true;
-    }
-    window.easyPack?.mapWidget("inpost-map-widget", (point) => {
-      const a = point.address as Record<string, string> | undefined;
-      const addr = [a?.line1, a?.line2].filter(Boolean).join(", ");
-      setPaczkomat({ id: point.name as string, address: addr });
-      setShowPaczkomatMap(false);
-      mapReadyRef.current = false;
-    });
-    // Leaflet renders black tiles when container was hidden on init — trigger resize to fix
-    setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
-  }, []);
-
+  // The overlay div is always in the DOM so Leaflet gets correct offsetHeight when init runs
   useEffect(() => {
-    if (!showPaczkomatMap) return;
+    if (!showPaczkomatMap || sdk.widgetCreated) return;
+
+    function createWidget() {
+      if (sdk.widgetCreated) return;
+      sdk.widgetCreated = true;
+      window.easyPack!.init({ defaultLocale: "pl", points: { types: ["parcel_locker_only"] } });
+      window.easyPack!.mapWidget("inpost-map-widget", (point) => {
+        const a = point.address as Record<string, string> | undefined;
+        const addr = [a?.line1, a?.line2].filter(Boolean).join(", ");
+        setPaczkomat({ id: point.name as string, address: addr });
+        setShowPaczkomatMap(false);
+      });
+    }
 
     if (!document.querySelector('link[href*="easypack24"]')) {
       const link = document.createElement("link");
@@ -77,15 +73,15 @@ export default function CartSidebar() {
     }
 
     if (window.easyPack) {
-      mountWidget();
-    } else if (!document.querySelector('script[src*="easypack24"]')) {
+      createWidget();
+    } else if (!sdk.scriptLoaded) {
+      sdk.scriptLoaded = true;
       const script = document.createElement("script");
       script.src = "https://geowidget.easypack24.net/js/sdk-for-embed.js";
-      script.async = true;
-      script.onload = mountWidget;
+      script.onload = createWidget;
       document.head.appendChild(script);
     }
-  }, [showPaczkomatMap, mountWidget]);
+  }, [showPaczkomatMap]);
 
   const handleCheckout = async (r: Region, paczkomatData?: Paczkomat) => {
     setPickingRegion(false);
@@ -103,9 +99,7 @@ export default function CartSidebar() {
           items: items.map((it) => ({ id: it.id, vIdx: it.vIdx, qty: it.qty })),
           currency,
           region: r,
-          ...(paczkomatData
-            ? { paczkomatId: paczkomatData.id, paczkomatAddress: paczkomatData.address }
-            : {}),
+          ...(paczkomatData ? { paczkomatId: paczkomatData.id, paczkomatAddress: paczkomatData.address } : {}),
         }),
       });
       const data = await res.json();
@@ -121,38 +115,27 @@ export default function CartSidebar() {
     }
   };
 
-  const openPaczkomatMap = () => {
-    mapReadyRef.current = false;
-    setShowPaczkomatMap(true);
-    setPickingRegion(false);
-    setRegion("pl");
-  };
-
   const totalQty = cart.reduce((s, c) => s + c.qty, 0);
-
-  const displayedShipLabel = paczkomat
-    ? SHIP.pl.label
-    : region
-    ? SHIP[region].label
-    : "Shipping";
-
-  const displayedShipCents = paczkomat
-    ? SHIP.pl[currency]
-    : shipCents;
-
-  const displayedTotal = subtotalCents + (displayedShipCents ?? 0);
 
   return (
     <>
-      {showPaczkomatMap && (
-        <div className="paczkomat-overlay">
-          <div className="paczkomat-header">
-            <span>Wybierz paczkomat InPost</span>
-            <button onClick={() => { setShowPaczkomatMap(false); mapReadyRef.current = false; setPickingRegion(true); setRegion(null); }}>× zamknij</button>
-          </div>
-          <div id="inpost-map-widget" className="paczkomat-map" />
+      {/*
+        Always rendered (not conditional) so #inpost-map-widget is always in the DOM.
+        Leaflet measures offsetHeight at init time — conditional rendering gives 0px and causes black tiles.
+        visibility:hidden keeps element layout-active with correct dimensions while invisible.
+      */}
+      <div
+        className="paczkomat-overlay"
+        style={{ visibility: showPaczkomatMap ? "visible" : "hidden", pointerEvents: showPaczkomatMap ? "auto" : "none" }}
+      >
+        <div className="paczkomat-header">
+          <span>Wybierz paczkomat InPost</span>
+          <button onClick={() => { setShowPaczkomatMap(false); setPickingRegion(true); setRegion(null); }}>
+            × zamknij
+          </button>
         </div>
-      )}
+        <div id="inpost-map-widget" className="paczkomat-map" />
+      </div>
 
       {totalQty > 0 && !cartOpen && (
         <button className="cart-fab" onClick={openCart}>
@@ -174,15 +157,7 @@ export default function CartSidebar() {
           {items.length === 0 && (
             <div className="empty">
               empty,{" "}
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontStyle: "normal",
-                  fontSize: 11,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                }}
-              >
+              <span style={{ fontFamily: "var(--mono)", fontStyle: "normal", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase" }}>
                 add something from the catalogue
               </span>
             </div>
@@ -192,9 +167,7 @@ export default function CartSidebar() {
               <Cover idx={i} release={it.release} />
               <div>
                 <h4>{it.release.title}</h4>
-                <div className="sub">
-                  {it.release.artist} · {it.release.variants[it.vIdx].k}
-                </div>
+                <div className="sub">{it.release.artist} · {it.release.variants[it.vIdx].k}</div>
                 <div className="qty">
                   <button onClick={() => updateQty(it.id, it.vIdx, -1)}>−</button>
                   <span>{it.qty}</span>
@@ -202,12 +175,8 @@ export default function CartSidebar() {
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div className="price">
-                  {formatPrice(variantPrice(it.release.variants[it.vIdx], currency) * it.qty, currency)}
-                </div>
-                <a className="rm" onClick={() => removeItem(it.id, it.vIdx)}>
-                  remove
-                </a>
+                <div className="price">{formatPrice(variantPrice(it.release.variants[it.vIdx], currency) * it.qty, currency)}</div>
+                <a className="rm" onClick={() => removeItem(it.id, it.vIdx)}>remove</a>
               </div>
             </div>
           ))}
@@ -250,7 +219,7 @@ export default function CartSidebar() {
                 <button onClick={() => { setRegion("uk"); handleCheckout("uk"); }}>
                   🇬🇧 UK<span>{formatPrice(SHIP.uk[currency] / 100, currency)}</span>
                 </button>
-                <button onClick={openPaczkomatMap}>
+                <button onClick={() => { setRegion("pl"); setShowPaczkomatMap(true); setPickingRegion(false); }}>
                   🇵🇱 Polska (Paczkomat)<span>{formatPrice(SHIP.pl[currency] / 100, currency)}</span>
                 </button>
               </div>
