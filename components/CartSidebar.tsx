@@ -168,36 +168,6 @@ export default function CartSidebar() {
 
   return (
     <>
-      {showPaczkomatMap && (
-        <div className="paczkomat-overlay">
-          <div className="paczkomat-header">
-            <span>Wybierz paczkomat InPost</span>
-            <button onClick={() => { closeMap(); setPickingRegion(true); setRegion(null); }}>× zamknij</button>
-          </div>
-          {widgetError ? (
-            <div className="paczkomat-fallback">
-              <p>Mapa paczkomatów jest chwilowo niedostępna.</p>
-              <p className="paczkomat-fallback-sub">
-                Znajdź swój paczkomat na{" "}
-                <a href="https://inpost.pl/znajdz-paczkomat" target="_blank" rel="noreferrer">inpost.pl/znajdz-paczkomat</a>{" "}
-                i wpisz jego kod poniżej.
-              </p>
-              <div className="paczkomat-manual">
-                <input
-                  placeholder="np. KRA01M"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && confirmManualCode()}
-                />
-                <button onClick={confirmManualCode} disabled={!manualCode.trim()}>Potwierdź</button>
-              </div>
-            </div>
-          ) : (
-            <div id="inpost-map-widget" className="paczkomat-map" ref={mapContainerRef} />
-          )}
-        </div>
-      )}
-
       {totalQty > 0 && !cartOpen && (
         <button className="cart-fab" onClick={openCart}>
           <span>Cart</span>
@@ -207,6 +177,36 @@ export default function CartSidebar() {
       )}
       <div className={`cart-scrim${cartOpen ? " on" : ""}`} onClick={closeCart} />
       <aside className={`cart${cartOpen ? " on" : ""}`} aria-hidden={!cartOpen}>
+        {showPaczkomatMap && (
+          <div className="cart-map-panel">
+            <div className="cart-map-head">
+              <span>Wybierz paczkomat</span>
+              <button onClick={() => { closeMap(); setPickingRegion(true); setRegion(null); }}>× anuluj</button>
+            </div>
+            {widgetError ? (
+              <div className="paczkomat-fallback">
+                <p>Mapa paczkomatów jest chwilowo niedostępna.</p>
+                <p className="paczkomat-fallback-sub">
+                  Znajdź swój paczkomat na{" "}
+                  <a href="https://inpost.pl/znajdz-paczkomat" target="_blank" rel="noreferrer">inpost.pl/znajdz-paczkomat</a>{" "}
+                  i wpisz jego kod poniżej.
+                </p>
+                <div className="paczkomat-manual">
+                  <input
+                    placeholder="np. KRA01M"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && confirmManualCode()}
+                  />
+                  <button onClick={confirmManualCode} disabled={!manualCode.trim()}>Potwierdź</button>
+                </div>
+              </div>
+            ) : (
+              <div id="inpost-map-widget" className="cart-map" ref={mapContainerRef} />
+            )}
+          </div>
+        )}
+
         <div className="hd">
           <b>Cart</b>
           <div style={{ display: "flex", gap: 20, alignItems: "center" }}>

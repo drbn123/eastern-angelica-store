@@ -459,13 +459,13 @@ header.main .right {
 .cart .ft .paczkomat-chosen-id { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; }
 .cart .ft .paczkomat-chosen-addr { font-size: 11px; opacity: 0.65; line-height: 1.4; }
 
-/* InPost Paczkomat map overlay */
-.paczkomat-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; background: var(--bg); }
-.paczkomat-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; flex-shrink: 0; }
-.paczkomat-header button { font-family: var(--mono); font-size: 12px; opacity: 0.6; letter-spacing: 0.1em; }
-.paczkomat-header button:hover { opacity: 1; }
-.paczkomat-map { flex: 1; min-height: 0; position: relative; overflow: hidden; }
-.paczkomat-map inpost-geowidget { display: block; width: 100%; height: 100%; }
+/* InPost Paczkomat map — embedded inside the cart drawer */
+.cart-map-panel { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; background: var(--bg); }
+.cart-map-head { display: flex; align-items: center; justify-content: space-between; padding: 20px; border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; flex-shrink: 0; }
+.cart-map-head button { font-family: var(--mono); font-size: 11px; opacity: 0.6; letter-spacing: 0.1em; }
+.cart-map-head button:hover { opacity: 1; }
+.cart-map { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.cart-map inpost-geowidget { display: block; width: 100%; height: 100%; filter: grayscale(1) contrast(1.04); }
 .paczkomat-fallback { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px 24px; text-align: center; }
 .paczkomat-fallback p { font-size: 15px; max-width: 420px; }
 .paczkomat-fallback-sub { font-size: 12px; opacity: 0.6; font-family: var(--mono); line-height: 1.6; }
