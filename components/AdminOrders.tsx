@@ -226,6 +226,8 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
   const [search, setSearch] = useState("");
   const [newCount, setNewCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const knownIds = useRef(new Set(initialOrders.map((o) => o.id)));
 
   useEffect(() => {
@@ -260,6 +262,27 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
     await Promise.all(ids.map((id) => fetch(`/api/orders/${id}`, { method: "DELETE" })));
     setOrders((prev) => prev.filter((o) => !ids.includes(o.id)));
     ids.forEach((id) => knownIds.current.delete(id));
+  }
+
+  async function syncFromStripe() {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/admin/sync-orders", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setSyncMsg(data.error ?? "Sync failed");
+      } else {
+        setSyncMsg(`Checked ${data.checked} pending, updated ${data.updated}${data.errors.length ? ` (${data.errors.length} errors)` : ""}`);
+        if (data.updated > 0) {
+          const res2 = await fetch("/api/orders");
+          if (res2.ok) setOrders(await res2.json());
+        }
+      }
+    } catch {
+      setSyncMsg("Sync failed");
+    }
+    setSyncing(false);
   }
 
   function exportCSV() {
@@ -335,6 +358,10 @@ export default function AdminOrders({ initialOrders }: { initialOrders: Order[] 
             {newCount} new order{newCount > 1 ? "s" : ""} ↓
           </button>
         )}
+        <button className="admin-btn-ghost ao-sync-btn" onClick={syncFromStripe} disabled={syncing}>
+          {syncing ? "Syncing…" : "Sync from Stripe"}
+        </button>
+        {syncMsg && <span className="ao-sync-msg">{syncMsg}</span>}
         {visible.length > 0 && (
           <button className="admin-btn-ghost ao-export-btn" onClick={exportCSV}>
             Export CSV ({visible.length})

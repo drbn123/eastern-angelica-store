@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getOrderByStripeSession, updateOrder } from "@/lib/orders";
+import { getOrderByStripeSession } from "@/lib/orders";
+import { applyPaidSession } from "@/lib/stripe-sync";
 import { sendWhatsApp } from "@/lib/notify";
 import { sendOrderConfirmation } from "@/lib/email";
 
@@ -33,45 +34,7 @@ export async function POST(req: NextRequest) {
     const order = await getOrderByStripeSession(session.id);
     if (!order) return NextResponse.json({ received: true });
 
-    // Stripe API 2026-05-27: shipping address is in collected_information.shipping_details.
-    // PL paczkomat orders have no shipping address — fall back to the billing details
-    // (name/address/phone) collected on the Stripe page so we can label the parcel.
-    const shipping = session.collected_information?.shipping_details;
-    const billing = session.customer_details;
-    const addr = shipping?.address ?? billing?.address ?? null;
-    const recipientName = shipping?.name ?? billing?.name ?? "";
-
-    const actualShipCents = session.shipping_cost?.amount_total ?? order.shippingCents;
-    const shippingRate = session.shipping_cost?.shipping_rate;
-    const shippingLabel = (shippingRate && typeof shippingRate !== "string")
-      ? (shippingRate as Stripe.ShippingRate).display_name ?? undefined
-      : undefined;
-
-    const paczkomatId = session.metadata?.paczkomatId || order.paczkomatId;
-    const paczkomatAddress = session.metadata?.paczkomatAddress || order.paczkomatAddress;
-
-    const updated = await updateOrder(order.id, {
-      status: "paid",
-      email: billing?.email ?? "",
-      phone: billing?.phone ?? undefined,
-      address: addr
-        ? {
-            name: recipientName,
-            line1: addr.line1 ?? "",
-            line2: addr.line2 ?? undefined,
-            city: addr.city ?? "",
-            postal_code: addr.postal_code ?? "",
-            country: addr.country ?? "",
-          }
-        : null,
-      shippingCents: actualShipCents,
-      shippingLabel,
-      totalCents: order.subtotalCents + actualShipCents,
-      stripePaymentIntent:
-        typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-      paidAt: new Date().toISOString(),
-      ...(paczkomatId ? { paczkomatId, paczkomatAddress } : {}),
-    });
+    const updated = await applyPaidSession(order, session);
     if (updated) {
       sendWhatsApp(updated);
       sendOrderConfirmation(updated);
